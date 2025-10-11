@@ -45,9 +45,18 @@ document.querySelectorAll('.option-button').forEach(button => {
 
 // Card data
 const cardsData = [
-    { title: "Cardiology", topics: "37 topics, 800 questions", date: "Up to date as of 01/2025", pdf: "assets/preview.pdf" },
-    { title: "Neurology", topics: "45 topics, 900 questions", date: "Up to date as of 01/2025", pdf: "assets/preview.pdf" },
-    { title: "Pulmonology", topics: "30 topics, 700 questions", date: "Up to date as of 01/2025", pdf: "assets/preview.pdf" },
+    { title: "Cardiology", topics: "17 topics, 8 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
+    { title: "Pulmonology", topics: "19 topics, 8 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
+    { title: "Nephrology", topics: "18 topics, 9 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
+    { title: "Gastro/Hepatology", topics: "25 topics, 12 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
+    { title: "Infectious Disease", topics: "24 topics, 13 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
+    { title: "Endocrinology", topics: "25 topics, 12 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
+    { title: "Hematology", topics: "21 topics, 12 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
+    { title: "Oncology", topics: "16 topics, 7 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
+    { title: "Rheumatology", topics: "14 topics, 8 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
+    { title: "Neurology", topics: "16 topics, 8 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
+    { title: "General Internal Medicine", topics: "59 topics, 19 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
+
 ];
 
 // Function to create a card
