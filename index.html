@@ -35,23 +35,6 @@
         </div>
     </section>
 
-    <section class="intro-video">
-        <div class="container">
-            <div class="video-content">
-                <div class="video-text">
-                    <h2>Meet the Creator</h2>
-                    <p>Hear directly from me about why "For The Boards" exists, who it’s for, and how to get the most out of it alongside your Qbank study.</p>
-                </div>
-                <div class="video-player">
-                    <video controls poster="assets/thumbnail.png">
-                        <source src="assets/sales.mp4" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <section class="info-strip">
         <div class="container">
             <div class="info-point">
@@ -136,6 +119,25 @@
         </div>
     </section>
 
+    <section class="intro-video">
+        <div class="container">
+            <div class="video-content">
+                <div class="video-text">
+                    <h2>Meet the Creator</h2>
+                    <p>Hear directly from me about why "For The Boards" exists, who it’s for, and how to get the most out of it alongside your Qbank study.</p>
+                </div>
+                <div class="video-player">
+                    <div class="video-frame">
+                        <video controls preload="metadata">
+                            <source src="assets/sales.mp4" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section id="pricing" class="cta-section">
         <h2>Invest in Your Future: Secure Your Copy of 'For The Boards' Today</h2>
         <p>Don't leave your success to chance. Invest in the ultimate study companion and conquer the ABIM exam.</p>
@@ -178,7 +180,7 @@
     <footer>
         <p>© 2025 For The Boards. All rights reserved.</p>
         <p><a href="index.html">For The Boards</a> | <a href="privacy.html">Privacy Policy</a> | <a href="terms.html">Terms of Use</a></p>
-        <p>Are you a residency program interested in our product? <button class="footer-contact-button" id="contactButton">Contact us</button> for more information.</p>
+        <p>Are you a residency program interested in our product? <span class="footer-contact-trigger" data-contact-trigger>Contact us</span> for more information.</p>
         <p><em>ABIM ® is a registered trademark of the American Board of Internal Medicine.</em></p>
     </footer>
 
@@ -206,6 +208,7 @@
 
                 <input type="hidden" name="_subject" value="New inquiry from ForTheBoards.com">
                 <input type="hidden" name="form-name" value="contact-form">
+                <p class="form-status" data-form-status aria-live="polite"></p>
                 <button type="submit" class="contact-submit">Send Message</button>
             </form>
         </div>

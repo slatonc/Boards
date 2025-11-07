@@ -15,7 +15,7 @@ document.querySelectorAll('.menu a, .modal-cta').forEach(anchor => {
 // Fixed CTA button behavior
 const headerCta = document.querySelector('.header-cta');
 const hero = document.querySelector('.hero');
-const previewSlider = document.querySelector('#preview .carousel-container');
+const previewSection = document.getElementById('preview');
 
 if (headerCta && hero) {
     const transitionPoint = hero.offsetHeight / 3;
@@ -23,16 +23,15 @@ if (headerCta && hero) {
     const updateHeaderCtaVisibility = () => {
         headerCta.classList.toggle('scrolled', window.scrollY > transitionPoint);
 
-        if (!previewSlider) {
+        if (!previewSection) {
             headerCta.style.opacity = '1';
             headerCta.style.pointerEvents = 'auto';
             return;
         }
 
-        const sliderRect = previewSlider.getBoundingClientRect();
-        const sliderInFocus = sliderRect.top < window.innerHeight * 0.6 && sliderRect.bottom > window.innerHeight * 0.2;
+        const previewTop = previewSection.offsetTop - (headerCta.offsetHeight || 0);
 
-        if (sliderInFocus) {
+        if (window.scrollY >= previewTop) {
             headerCta.style.opacity = '0';
             headerCta.style.pointerEvents = 'none';
         } else {
@@ -147,31 +146,124 @@ if (modalClose && pdfModal) {
     modalClose.addEventListener("click", () => pdfModal.style.display = "none");
 }
 
-const contactButton = document.getElementById("contactButton");
 const contactModal = document.getElementById("contactModal");
 const contactClose = document.getElementById("contactClose");
+const contactTriggers = document.querySelectorAll('[data-contact-trigger]');
+const contactForm = document.querySelector('.contact-form');
+const contactFormStatus = contactForm ? contactForm.querySelector('[data-form-status]') : null;
+const contactSubmitButton = contactForm ? contactForm.querySelector('.contact-submit') : null;
 
-if (contactButton && contactModal) {
-    contactButton.addEventListener("click", () => {
-        contactModal.style.display = "flex";
+const focusFirstTrigger = () => {
+    if (contactTriggers.length > 0) {
+        contactTriggers[0].focus();
+    }
+};
+
+const openContactModal = () => {
+    if (!contactModal) return;
+    contactModal.style.display = "flex";
+    contactTriggers.forEach(trigger => trigger.setAttribute("aria-expanded", "true"));
+    const firstField = contactForm ? contactForm.querySelector('input, textarea, select') : null;
+    if (firstField) {
+        firstField.focus();
+    }
+};
+
+const closeContactModal = () => {
+    if (!contactModal) return;
+    contactModal.style.display = "none";
+    contactTriggers.forEach(trigger => trigger.setAttribute("aria-expanded", "false"));
+    focusFirstTrigger();
+};
+
+if (contactTriggers.length && contactModal) {
+    contactTriggers.forEach(trigger => {
+        trigger.addEventListener("click", openContactModal);
+        trigger.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " " || event.key === "Space") {
+                event.preventDefault();
+                openContactModal();
+            }
+        });
+        trigger.setAttribute("tabindex", "0");
+        trigger.setAttribute("role", "button");
+        trigger.setAttribute("aria-controls", "contactModal");
+        trigger.setAttribute("aria-expanded", "false");
     });
 }
 
 if (contactClose && contactModal) {
-    contactClose.addEventListener("click", () => {
-        contactModal.style.display = "none";
-    });
+    contactClose.addEventListener("click", closeContactModal);
 }
 
 window.addEventListener("click", event => {
-    if (event.target === pdfModal) {
+    if (pdfModal && event.target === pdfModal) {
         pdfModal.style.display = "none";
     }
 
-    if (event.target === contactModal) {
-        contactModal.style.display = "none";
+    if (contactModal && event.target === contactModal) {
+        closeContactModal();
     }
 });
+
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+        if (pdfModal && pdfModal.style.display === "flex") {
+            pdfModal.style.display = "none";
+        }
+        if (contactModal && contactModal.style.display === "flex") {
+            closeContactModal();
+        }
+    }
+});
+
+if (contactForm && contactSubmitButton) {
+    contactForm.addEventListener('submit', async event => {
+        event.preventDefault();
+
+        if (contactFormStatus) {
+            contactFormStatus.textContent = 'Sending...';
+        }
+
+        contactSubmitButton.disabled = true;
+
+        try {
+            const formData = new FormData(contactForm);
+            const response = await fetch(contactForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    Accept: 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                if (contactFormStatus) {
+                    contactFormStatus.textContent = 'Thanks! We will get back to you soon.';
+                }
+                contactForm.reset();
+                setTimeout(() => {
+                    if (contactFormStatus) {
+                        contactFormStatus.textContent = '';
+                    }
+                    closeContactModal();
+                }, 1600);
+            } else {
+                const data = await response.json().catch(() => null);
+                const errorMessage = data && data.error ? data.error : 'There was a problem sending your message.';
+                if (contactFormStatus) {
+                    contactFormStatus.textContent = errorMessage;
+                }
+            }
+        } catch (error) {
+            if (contactFormStatus) {
+                contactFormStatus.textContent = 'Network error. Please try again in a moment.';
+            }
+        } finally {
+            contactSubmitButton.disabled = false;
+        }
+    });
+}
 
 // Scroll-triggered animation for "Why Choose" features
 const features = document.querySelectorAll('.why-choose .feature');
