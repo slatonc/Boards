@@ -1,3 +1,5 @@
+console.log('script.js loaded');
+
 // Smooth scrolling for menu links
 document.querySelectorAll('.menu a, .modal-cta').forEach(anchor => {
     anchor.addEventListener('click', function(e) {
@@ -47,23 +49,55 @@ if (headerCta && hero) {
 
 // Toggle Button Functionality for Pricing
 const pricingPanels = document.querySelectorAll('[data-pricing-panel]');
+const pricingButtons = document.querySelectorAll('.option-button');
 
-document.querySelectorAll('.option-button').forEach(button => {
-    button.addEventListener('click', () => {
-        const targetId = button.dataset.target;
-        const targetSection = document.getElementById(targetId);
-        if (!targetSection) {
-            return;
-        }
+const setActivePricingPanel = (button) => {
+    if (!button) {
+        console.log('No button provided to setActivePricingPanel');
+        return;
+    }
 
-        document.querySelectorAll('.option-button').forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
+    const targetId = button.dataset.target;
+    const targetSection = document.getElementById(targetId);
 
-        pricingPanels.forEach(panel => {
-            panel.hidden = panel !== targetSection;
-        });
+    if (!targetSection) {
+        console.log('No target section found for:', targetId);
+        return;
+    }
+
+    console.log(`Pricing toggle activated: ${targetId}`);
+
+    pricingButtons.forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+
+    pricingPanels.forEach(panel => {
+        const isTarget = panel === targetSection;
+        panel.hidden = !isTarget;
+        panel.style.display = isTarget ? 'block' : 'none';
+    });
+};
+
+// Add click listeners to each button
+pricingButtons.forEach(button => {
+    button.addEventListener('click', event => {
+        event.preventDefault();
+        setActivePricingPanel(button);
     });
 });
+
+pricingButtons.forEach(button => {
+    button.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setActivePricingPanel(button);
+        }
+    });
+});
+
+const initiallyActive = document.querySelector('.option-button.active') || pricingButtons[0];
+if (initiallyActive) {
+    setActivePricingPanel(initiallyActive);
+}
 
 // Card data
 const cardsData = [

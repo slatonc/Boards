@@ -137,7 +137,7 @@ header {
 }
 
 .logo img {
-    height: 50px;
+    height: 80px;
 }
 
 nav {
@@ -764,8 +764,6 @@ nav {
 .button-container {
     display: flex;
     border-radius: 10px;
-    overflow: hidden;
-    perspective: 1px;
     background-color: var(--primary-700);
     max-width: 600px;
     margin: 0 auto 40px;
@@ -784,7 +782,6 @@ nav {
     cursor: pointer;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
     flex: 1;
-    position: relative;
 }
 
 .option-button.active {
@@ -891,6 +888,11 @@ nav {
     font-size: 16px;
 }
 
+/* Orange border for all pricing product boxes */
+#pricing .product-box {
+    border: 3px solid var(--accent-500);
+}
+
 .product-box.preferred {
     border: 3px solid var(--accent-500);
 }
@@ -907,7 +909,6 @@ nav {
     background-color: var(--neutral-100);
     color: var(--neutral-900);
     text-align: center;
-    border: none;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
@@ -931,6 +932,8 @@ nav {
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     width: auto;
+    margin: 0 auto;
+    display: block;
 }
 
 #programs-section .product-box .email-us-button:hover {
