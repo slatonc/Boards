@@ -15,22 +15,36 @@ document.querySelectorAll('.menu a, .modal-cta').forEach(anchor => {
 // Fixed CTA button behavior
 const headerCta = document.querySelector('.header-cta');
 const hero = document.querySelector('.hero');
-const emailCaptureForm = document.querySelector('.email-capture-form');
-const transitionPoint = hero.offsetHeight / 3;
+const previewSlider = document.querySelector('#preview .carousel-container');
 
-window.addEventListener('scroll', () => {
-    const emailCaptureFormPosition = emailCaptureForm.getBoundingClientRect().top;
-    headerCta.classList.toggle('scrolled', window.scrollY > transitionPoint);
+if (headerCta && hero) {
+    const transitionPoint = hero.offsetHeight / 3;
 
-    // Hide/show based on email capture form position
-    if (emailCaptureFormPosition < window.innerHeight / 2) {
-        headerCta.style.opacity = '0';
-        headerCta.style.pointerEvents = 'none';
-    } else {
-        headerCta.style.opacity = '1';
-        headerCta.style.pointerEvents = 'auto';
-    }
-});
+    const updateHeaderCtaVisibility = () => {
+        headerCta.classList.toggle('scrolled', window.scrollY > transitionPoint);
+
+        if (!previewSlider) {
+            headerCta.style.opacity = '1';
+            headerCta.style.pointerEvents = 'auto';
+            return;
+        }
+
+        const sliderRect = previewSlider.getBoundingClientRect();
+        const sliderInFocus = sliderRect.top < window.innerHeight * 0.6 && sliderRect.bottom > window.innerHeight * 0.2;
+
+        if (sliderInFocus) {
+            headerCta.style.opacity = '0';
+            headerCta.style.pointerEvents = 'none';
+        } else {
+            headerCta.style.opacity = '1';
+            headerCta.style.pointerEvents = 'auto';
+        }
+    };
+
+    window.addEventListener('scroll', updateHeaderCtaVisibility);
+    window.addEventListener('resize', updateHeaderCtaVisibility);
+    updateHeaderCtaVisibility();
+}
 
 // Toggle Button Functionality for Pricing
 document.querySelectorAll('.option-button').forEach(button => {
@@ -128,10 +142,34 @@ initCarousel();
 
 // Modal functionality
 const modalClose = document.getElementById("modalClose");
-modalClose.addEventListener("click", () => document.getElementById("pdfModal").style.display = "none");
+const pdfModal = document.getElementById("pdfModal");
+if (modalClose && pdfModal) {
+    modalClose.addEventListener("click", () => pdfModal.style.display = "none");
+}
+
+const contactButton = document.getElementById("contactButton");
+const contactModal = document.getElementById("contactModal");
+const contactClose = document.getElementById("contactClose");
+
+if (contactButton && contactModal) {
+    contactButton.addEventListener("click", () => {
+        contactModal.style.display = "flex";
+    });
+}
+
+if (contactClose && contactModal) {
+    contactClose.addEventListener("click", () => {
+        contactModal.style.display = "none";
+    });
+}
+
 window.addEventListener("click", event => {
-    if (event.target === document.getElementById("pdfModal")) {
-        document.getElementById("pdfModal").style.display = "none";
+    if (event.target === pdfModal) {
+        pdfModal.style.display = "none";
+    }
+
+    if (event.target === contactModal) {
+        contactModal.style.display = "none";
     }
 });
 

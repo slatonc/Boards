@@ -35,6 +35,23 @@
         </div>
     </section>
 
+    <section class="intro-video">
+        <div class="container">
+            <div class="video-content">
+                <div class="video-text">
+                    <h2>Meet the Creator</h2>
+                    <p>Hear directly from me about why "For The Boards" exists, who it’s for, and how to get the most out of it alongside your Qbank study.</p>
+                </div>
+                <div class="video-player">
+                    <video controls poster="assets/thumbnail.png">
+                        <source src="assets/sales.mp4" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="info-strip">
         <div class="container">
             <div class="info-point">
@@ -161,9 +178,38 @@
     <footer>
         <p>© 2025 For The Boards. All rights reserved.</p>
         <p><a href="index.html">For The Boards</a> | <a href="privacy.html">Privacy Policy</a> | <a href="terms.html">Terms of Use</a></p>
-        <p>Are you a residency program interested in our product? <a href="mailto:admin@fortheboards.com">Contact us</a> for more information.</p>
+        <p>Are you a residency program interested in our product? <button class="footer-contact-button" id="contactButton">Contact us</button> for more information.</p>
         <p><em>ABIM ® is a registered trademark of the American Board of Internal Medicine.</em></p>
     </footer>
+
+    <div class="modal" id="contactModal">
+        <div class="modal-content contact-modal-content">
+            <button class="modal-close" id="contactClose">×</button>
+            <form action="https://formspree.io/f/xgvpggoz" method="POST" class="contact-form">
+                <h3>Contact Us</h3>
+                <p>Have a question about "For The Boards"? Send it our way.</p>
+
+                <label>
+                    Your Name
+                    <input type="text" name="name" required>
+                </label>
+
+                <label>
+                    Email
+                    <input type="email" name="_replyto" required>
+                </label>
+
+                <label>
+                    Message
+                    <textarea name="message" rows="5" required></textarea>
+                </label>
+
+                <input type="hidden" name="_subject" value="New inquiry from ForTheBoards.com">
+                <input type="hidden" name="form-name" value="contact-form">
+                <button type="submit" class="contact-submit">Send Message</button>
+            </form>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
