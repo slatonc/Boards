@@ -46,13 +46,22 @@ if (headerCta && hero) {
 }
 
 // Toggle Button Functionality for Pricing
+const pricingPanels = document.querySelectorAll('[data-pricing-panel]');
+
 document.querySelectorAll('.option-button').forEach(button => {
     button.addEventListener('click', () => {
-        const targetSection = document.getElementById(button.dataset.target);
+        const targetId = button.dataset.target;
+        const targetSection = document.getElementById(targetId);
+        if (!targetSection) {
+            return;
+        }
+
         document.querySelectorAll('.option-button').forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
-        document.querySelectorAll('#doctors-section, #programs-section').forEach(section => section.style.display = 'none');
-        targetSection.style.display = 'block';
+
+        pricingPanels.forEach(panel => {
+            panel.hidden = panel !== targetSection;
+        });
     });
 });
 
