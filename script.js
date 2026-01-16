@@ -101,18 +101,18 @@ if (initiallyActive) {
 
 // Card data
 const cardsData = [
-    { title: "Cardiology", topics: "17 topics, 8 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
-    { title: "Pulmonology", topics: "19 topics, 8 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
-    { title: "Nephrology", topics: "18 topics, 9 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
-    { title: "Gastro/Hepatology", topics: "25 topics, 12 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
-    { title: "Infectious Disease", topics: "24 topics, 13 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
-    { title: "Endocrinology", topics: "25 topics, 12 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
-    { title: "Hematology", topics: "21 topics, 12 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
-    { title: "Oncology", topics: "16 topics, 7 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
-    { title: "Rheumatology", topics: "14 topics, 8 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
-    { title: "Neurology", topics: "16 topics, 8 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
-    { title: "General Internal Medicine", topics: "59 topics, 19 pages", date: "Up to date as of 09/2025", pdf: "assets/preview.pdf" },
-
+    { title: "Cardiology", topics: "23 pages", date: "Up to date as of 01/2026", pdf: "assets/Cardiology_preview.pdf" },
+    { title: "Pulmonology", topics: "17 pages", date: "Up to date as of 01/2026", pdf: "assets/Pulm_preview.pdf" },
+    { title: "Nephrology", topics: "13 pages", date: "Up to date as of 01/2026", pdf: "assets/Neph_preview.pdf" },
+    { title: "Gastro/Hepatology", topics: "24 pages", date: "Up to date as of 01/2026", pdf: "assets/GI_preivew.pdf" },
+    { title: "Infectious Disease", topics: "20 pages", date: "Up to date as of 01/2026", pdf: "assets/ID_preview.pdf" },
+    { title: "Endocrinology", topics: "21 pages", date: "Up to date as of 01/2026", pdf: "assets/Endo_preview.pdf" },
+    { title: "Hematology", topics: "22 pages", date: "Up to date as of 01/2026", pdf: "assets/Heme_preview.pdf" },
+    { title: "Oncology", topics: "12 pages", date: "Up to date as of 01/2026", pdf: "assets/Onc_preview.pdf" },
+    { title: "Rheumatology", topics: "12 pages", date: "Up to date as of 01/2026", pdf: "assets/Rheum_preview.pdf" },
+    { title: "Neurology", topics: "12 pages", date: "Up to date as of 01/2026", pdf: "assets/Neuro_preview.pdf" },
+    { title: "General Internal Medicine", topics: "18 pages", date: "Up to date as of 01/2026", pdf: "assets/GIM_preview.pdf" },
+    { title: "Subspecialties", topics: "18 pages", date: "Up to date as of 01/2026", pdf: "assets/Subspecialty_preview.pdf" },
 ];
 
 // Function to create a card
