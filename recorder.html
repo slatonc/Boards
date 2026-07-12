@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <meta name="description" content="A private local recording guide for the For The Boards introduction.">
+    <title>For The Boards - Voice Recording Studio</title>
+    <link rel="stylesheet" href="recorder.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="app-header">
+            <a class="brand" href="index.html" aria-label="For The Boards home">
+                <span class="brand-mark">FTB</span>
+                <span>
+                    <strong>For The Boards</strong>
+                    <small>Voice Recording Studio</small>
+                </span>
+            </a>
+            <span class="local-badge"><i></i> Private and local</span>
+        </header>
+
+        <main>
+            <section class="welcome" id="welcomePanel">
+                <div class="welcome-copy">
+                    <span class="eyebrow">Guided recording session</span>
+                    <h1>Let’s capture a natural, professional read.</h1>
+                    <p>The studio will show one take at a time, check the recording quality, save your progress on this device, and package everything with clear filenames when you finish.</p>
+
+                    <ul class="welcome-checklist">
+                        <li><span>1</span> Sit in a quiet, furnished room.</li>
+                        <li><span>2</span> Keep the microphone 6–10 inches away.</li>
+                        <li><span>3</span> Leave a short silence before and after each take.</li>
+                        <li><span>4</span> Listen once before saving.</li>
+                    </ul>
+
+                    <button class="primary-button primary-button--large" id="enableMicButton" type="button">
+                        <span class="button-record-dot"></span>
+                        Enable microphone and begin
+                    </button>
+                    <p class="permission-note">Your recordings stay in this browser until you download or clear them.</p>
+                    <div class="permission-error" id="permissionError" role="alert" hidden></div>
+                </div>
+
+                <div class="welcome-visual" aria-hidden="true">
+                    <div class="cover-card"></div>
+                    <div class="sound-lines">
+                        <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                    </div>
+                    <div class="quality-card">
+                        <span>Signal check</span>
+                        <strong>Clear</strong>
+                        <div><i></i></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="recorder-app" id="recorderApp" hidden>
+                <div class="session-progress">
+                    <div class="progress-copy">
+                        <span id="progressLabel">Recording 1 of 19</span>
+                        <strong id="savedProgress">0 saved</strong>
+                    </div>
+                    <div class="progress-track" aria-hidden="true">
+                        <span id="progressFill"></span>
+                    </div>
+                </div>
+
+                <div class="studio-layout">
+                    <section class="studio-main">
+                        <div class="take-navigation">
+                            <button class="icon-button" id="previousButton" type="button" aria-label="Previous take">←</button>
+                            <div>
+                                <span class="take-number" id="takeNumber">Snippet 1 · Take A</span>
+                                <strong id="takeTitle">Introduction</strong>
+                            </div>
+                            <button class="icon-button" id="nextButton" type="button" aria-label="Next take">→</button>
+                        </div>
+
+                        <article class="script-card">
+                            <div class="direction-row">
+                                <span class="direction-label">Direction</span>
+                                <p id="takeDirection">Warm and welcoming.</p>
+                            </div>
+                            <blockquote id="scriptText">Hi, I’m Slaton Case—a physician and the author of For The Boards.</blockquote>
+                            <div class="read-meta">
+                                <span id="wordCount">13 words</span>
+                                <span id="targetDuration">About 5 seconds</span>
+                            </div>
+                        </article>
+
+                        <section class="recording-console" aria-label="Recording controls">
+                            <div class="console-status">
+                                <span class="status-chip status-chip--ready" id="statusChip">Ready</span>
+                                <time id="recordingTimer">0:00.0</time>
+                            </div>
+
+                            <canvas id="waveform" width="900" height="180" aria-label="Live microphone level"></canvas>
+
+                            <div class="level-row">
+                                <span>Input</span>
+                                <div class="level-meter" aria-hidden="true"><i id="levelFill"></i></div>
+                                <span id="levelLabel">Waiting</span>
+                            </div>
+
+                            <div class="console-actions">
+                                <button class="record-button" id="recordButton" type="button">
+                                    <span></span>
+                                    Start recording
+                                </button>
+                                <button class="stop-button" id="stopButton" type="button" disabled>
+                                    <span></span>
+                                    Stop
+                                </button>
+                            </div>
+                            <p class="console-tip" id="consoleTip">Take a breath, press record, wait a beat, then begin.</p>
+                        </section>
+
+                        <section class="review-panel" id="reviewPanel" hidden>
+                            <div class="review-heading">
+                                <div>
+                                    <span class="eyebrow">Review this take</span>
+                                    <h2 id="qualityHeading">Recording analyzed</h2>
+                                </div>
+                                <span class="quality-badge" id="qualityBadge">Good take</span>
+                            </div>
+
+                            <audio id="recordingPlayback" controls preload="metadata"></audio>
+
+                            <div class="metrics-grid">
+                                <div><span>Duration</span><strong id="durationMetric">—</strong></div>
+                                <div><span>Peak</span><strong id="peakMetric">—</strong></div>
+                                <div><span>Average</span><strong id="averageMetric">—</strong></div>
+                                <div><span>Room noise</span><strong id="noiseMetric">—</strong></div>
+                            </div>
+
+                            <ul class="quality-notes" id="qualityNotes"></ul>
+
+                            <label class="confirmation-check">
+                                <input id="wordsConfirmed" type="checkbox">
+                                <span id="confirmationText">I listened back and the words are correct.</span>
+                            </label>
+
+                            <div class="review-actions">
+                                <button class="secondary-button" id="retakeButton" type="button">Retake</button>
+                                <button class="primary-button" id="saveNextButton" type="button" disabled>Save take and continue →</button>
+                            </div>
+                        </section>
+                    </section>
+
+                    <aside class="session-sidebar">
+                        <div class="sidebar-heading">
+                            <div>
+                                <span class="eyebrow">This session</span>
+                                <h2>Your takes</h2>
+                            </div>
+                            <span class="saved-count" id="savedCount">0 / 19</span>
+                        </div>
+
+                        <ol class="take-list" id="takeList"></ol>
+
+                        <div class="export-card">
+                            <strong>Recording package</strong>
+                            <p>Download every saved take with a script and quality manifest.</p>
+                            <button class="download-button" id="downloadAllButton" type="button" disabled>Download all as ZIP</button>
+                            <button class="text-button" id="clearSessionButton" type="button">Clear saved session</button>
+                        </div>
+                    </aside>
+                </div>
+            </section>
+        </main>
+
+        <div class="completion-modal" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="completionTitle" hidden>
+            <div class="completion-card">
+                <span class="completion-mark">✓</span>
+                <span class="eyebrow">Session complete</span>
+                <h2 id="completionTitle">All requested takes are saved.</h2>
+                <p>Download the recording package, then attach the ZIP to the Codex task. It includes each audio file with a clear name plus the script and analysis results.</p>
+                <button class="primary-button primary-button--large" id="completionDownloadButton" type="button">Download recording package</button>
+                <button class="text-button" id="closeCompletionButton" type="button">Review takes first</button>
+            </div>
+        </div>
+
+        <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    </div>
+
+    <script src="recorder.js"></script>
+</body>
+</html>

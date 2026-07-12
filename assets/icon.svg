@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="For The Boards">
+  <!-- Navy mark: FTB monogram + presentation-to-diagnosis path -->
+  <rect width="64" height="64" rx="14" fill="#0c223f"/>
+  <!-- Clue nodes → diagnosis (presentation-first) -->
+  <circle cx="16" cy="20" r="2.6" fill="#83c8ff"/>
+  <circle cx="28" cy="20" r="2.6" fill="#83c8ff"/>
+  <circle cx="40" cy="20" r="2.6" fill="#83c8ff"/>
+  <path d="M16 20h24" fill="none" stroke="#83c8ff" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="50" cy="20" r="3.8" fill="#5ecf8a"/>
+  <!-- FTB -->
+  <text
+    x="32"
+    y="46"
+    text-anchor="middle"
+    font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif"
+    font-size="15"
+    font-weight="800"
+    fill="#ffffff"
+    letter-spacing="1.2"
+  >FTB</text>
+</svg>

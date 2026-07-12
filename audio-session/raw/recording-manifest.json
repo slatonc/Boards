@@ -1,0 +1,657 @@
+{
+  "project": "For The Boards introduction narration",
+  "createdAt": "2026-07-12T08:13:58.553Z",
+  "appVersion": 1,
+  "savedTakes": 19,
+  "expectedTakes": 19,
+  "takes": [
+    {
+      "id": "01a",
+      "filename": "ftb-01a-introduction-natural.webm",
+      "text": "Hi, I’m Slaton Case—a physician and the author of For The Boards.",
+      "direction": "Natural and conversational. Warm, welcoming, and lightly smiling.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 5.9,
+        "peakDb": -6.5,
+        "averageDb": -30.4,
+        "noiseDb": -63.1,
+        "clipPercent": 0,
+        "leadingSilence": 1.08,
+        "trailingSilence": 0.83,
+        "quality": "good",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "good",
+            "text": "The peak level has healthy recording headroom."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:07:55.203Z"
+    },
+    {
+      "id": "01b",
+      "filename": "ftb-01b-introduction-warm.webm",
+      "text": "Hi, I’m Slaton Case—a physician and the author of For The Boards.",
+      "direction": "A little slower, warmer, and more personal. Keep the credentials understated.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 7.19,
+        "peakDb": -10,
+        "averageDb": -33.6,
+        "noiseDb": -63.3,
+        "clipPercent": 0,
+        "leadingSilence": 1.16,
+        "trailingSilence": 1.49,
+        "quality": "good",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "good",
+            "text": "The peak level has healthy recording headroom."
+          },
+          {
+            "severity": "warning",
+            "text": "The average voice level is a little low."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:08:16.020Z"
+    },
+    {
+      "id": "02a",
+      "filename": "ftb-02a-origin-natural.webm",
+      "text": "I started writing this in residency because most study materials teach from a diagnosis. Patients—and board questions—start with a presentation.",
+      "direction": "Natural and conversational. Let the contrast between diagnosis and presentation land clearly.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 11.25,
+        "peakDb": -12,
+        "averageDb": -31.7,
+        "noiseDb": -61.4,
+        "clipPercent": 0,
+        "leadingSilence": 0.83,
+        "trailingSilence": 0.92,
+        "quality": "good",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "good",
+            "text": "The peak level has healthy recording headroom."
+          },
+          {
+            "severity": "warning",
+            "text": "The average voice level is a little low."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:08:43.002Z"
+    },
+    {
+      "id": "02b",
+      "filename": "ftb-02b-origin-reflective.webm",
+      "text": "I started writing this in residency because most study materials teach from a diagnosis. Patients—and board questions—start with a presentation.",
+      "direction": "Reflective in the first sentence, then more conviction on the second.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 12.62,
+        "peakDb": -13.1,
+        "averageDb": -32.4,
+        "noiseDb": -64.3,
+        "clipPercent": 0,
+        "leadingSilence": 1.41,
+        "trailingSilence": 1.25,
+        "quality": "warning",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "warning",
+            "text": "The voice is on the quiet side, but it may still clean up well."
+          },
+          {
+            "severity": "warning",
+            "text": "The average voice level is a little low."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:09:11.320Z"
+    },
+    {
+      "id": "03a",
+      "filename": "ftb-03a-method-natural.webm",
+      "text": "For The Boards starts with the symptoms and clues, then links them to the diagnosis: how to confirm it, treat it, monitor it, and separate look-alikes.",
+      "direction": "Clear and conversational. Keep each item in the list distinct.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 11.72,
+        "peakDb": -12.4,
+        "averageDb": -31.2,
+        "noiseDb": -64.6,
+        "clipPercent": 0,
+        "leadingSilence": 1.16,
+        "trailingSilence": 0.42,
+        "quality": "warning",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "warning",
+            "text": "The voice is on the quiet side, but it may still clean up well."
+          },
+          {
+            "severity": "warning",
+            "text": "The average voice level is a little low."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:10:13.336Z"
+    },
+    {
+      "id": "03b",
+      "filename": "ftb-03b-method-measured.webm",
+      "text": "For The Boards starts with the symptoms and clues, then links them to the diagnosis: how to confirm it, treat it, monitor it, and separate look-alikes.",
+      "direction": "Slightly slower and more measured. Avoid rushing the list.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 13.59,
+        "peakDb": -12.6,
+        "averageDb": -30.8,
+        "noiseDb": -64.5,
+        "clipPercent": 0,
+        "leadingSilence": 1.08,
+        "trailingSilence": 1.08,
+        "quality": "good",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "warning",
+            "text": "The voice is on the quiet side, but it may still clean up well."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:10:35.420Z"
+    },
+    {
+      "id": "04a",
+      "filename": "ftb-04a-knowledge-natural.webm",
+      "text": "It’s built for the knowledge you already have—not to reteach medicine from scratch.",
+      "direction": "Reassuring and conversational. Gently emphasize “knowledge you already have.”",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 5.35,
+        "peakDb": -12.5,
+        "averageDb": -31.1,
+        "noiseDb": -63.5,
+        "clipPercent": 0,
+        "leadingSilence": 0.58,
+        "trailingSilence": 0.66,
+        "quality": "warning",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "warning",
+            "text": "The voice is on the quiet side, but it may still clean up well."
+          },
+          {
+            "severity": "warning",
+            "text": "The average voice level is a little low."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:10:55.569Z"
+    },
+    {
+      "id": "04b",
+      "filename": "ftb-04b-knowledge-confident.webm",
+      "text": "It’s built for the knowledge you already have—not to reteach medicine from scratch.",
+      "direction": "More confident and concise, without sounding defensive.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 5.89,
+        "peakDb": -11.9,
+        "averageDb": -30.8,
+        "noiseDb": -64.1,
+        "clipPercent": 0,
+        "leadingSilence": 1.16,
+        "trailingSilence": 0.5,
+        "quality": "good",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "good",
+            "text": "The peak level has healthy recording headroom."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:11:06.852Z"
+    },
+    {
+      "id": "05a",
+      "filename": "ftb-05a-personal-reference-natural.webm",
+      "text": "Use it with your question bank. Add notes from wards and questions. Over time it becomes your personalized ABIM reference—something you trust and can hold in your hands.",
+      "direction": "Natural and encouraging. Keep this helpful rather than promotional.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 11.6,
+        "peakDb": -10.7,
+        "averageDb": -30.2,
+        "noiseDb": -62.8,
+        "clipPercent": 0,
+        "leadingSilence": 0.91,
+        "trailingSilence": 0.75,
+        "quality": "good",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "good",
+            "text": "The peak level has healthy recording headroom."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:11:47.202Z"
+    },
+    {
+      "id": "05b",
+      "filename": "ftb-05b-personal-reference-warm.webm",
+      "text": "Use it with your question bank. Add notes from wards and questions. Over time it becomes your personalized ABIM reference—something you trust and can hold in your hands.",
+      "direction": "Warmer and more personal. Slow down on “something you trust and can hold in your hands.”",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 12.87,
+        "peakDb": -10,
+        "averageDb": -31.8,
+        "noiseDb": -63.5,
+        "clipPercent": 0,
+        "leadingSilence": 1.41,
+        "trailingSilence": 1.08,
+        "quality": "good",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "good",
+            "text": "The peak level has healthy recording headroom."
+          },
+          {
+            "severity": "warning",
+            "text": "The average voice level is a little low."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:12:05.536Z"
+    },
+    {
+      "id": "06a",
+      "filename": "ftb-06a-individual-price.webm",
+      "text": "Individual copies are sixty dollars.",
+      "direction": "Straightforward and matter-of-fact. Do not turn it into a sales announcement.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 3.45,
+        "peakDb": -11.1,
+        "averageDb": -31.2,
+        "noiseDb": -64.4,
+        "clipPercent": 0,
+        "leadingSilence": 0.9,
+        "trailingSilence": 0.49,
+        "quality": "good",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "good",
+            "text": "The peak level has healthy recording headroom."
+          },
+          {
+            "severity": "warning",
+            "text": "The average voice level is a little low."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:12:14.952Z"
+    },
+    {
+      "id": "06b",
+      "filename": "ftb-06b-program-price.webm",
+      "text": "Bulk program pricing is fifty dollars per resident.",
+      "direction": "Confident and clear, with light emphasis on “per resident.”",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 4.02,
+        "peakDb": -10.2,
+        "averageDb": -29.8,
+        "noiseDb": -64.2,
+        "clipPercent": 0,
+        "leadingSilence": 0.74,
+        "trailingSilence": 0.74,
+        "quality": "good",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "good",
+            "text": "The peak level has healthy recording headroom."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:12:24.252Z"
+    },
+    {
+      "id": "07a",
+      "filename": "ftb-07a-closing-calm.webm",
+      "text": "Connect the symptoms. Make the diagnosis. Make the book your own.",
+      "direction": "Calm and deliberate. Give each sentence its own beat.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 5.59,
+        "peakDb": -8,
+        "averageDb": -30.9,
+        "noiseDb": -64.2,
+        "clipPercent": 0,
+        "leadingSilence": 0.58,
+        "trailingSilence": 0.67,
+        "quality": "good",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "good",
+            "text": "The peak level has healthy recording headroom."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:12:35.186Z"
+    },
+    {
+      "id": "07b",
+      "filename": "ftb-07b-closing-energetic.webm",
+      "text": "Connect the symptoms. Make the diagnosis. Make the book your own.",
+      "direction": "More energetic and aspirational, while remaining credible.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 4.52,
+        "peakDb": -10.9,
+        "averageDb": -30.5,
+        "noiseDb": -63.9,
+        "clipPercent": 0,
+        "leadingSilence": 0.82,
+        "trailingSilence": 0.33,
+        "quality": "good",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "good",
+            "text": "The peak level has healthy recording headroom."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:12:44.585Z"
+    },
+    {
+      "id": "07c",
+      "filename": "ftb-07c-closing-confident.webm",
+      "text": "Connect the symptoms. Make the diagnosis. Make the book your own.",
+      "direction": "Quietly confident. Leave a full pause between every sentence.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 7.49,
+        "peakDb": -14.9,
+        "averageDb": -35.5,
+        "noiseDb": -64.9,
+        "clipPercent": 0,
+        "leadingSilence": 1.83,
+        "trailingSilence": 1.5,
+        "quality": "warning",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "warning",
+            "text": "The voice is on the quiet side, but it may still clean up well."
+          },
+          {
+            "severity": "warning",
+            "text": "The average voice level is a little low."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:12:58.769Z"
+    },
+    {
+      "id": "08a",
+      "filename": "ftb-08a-brand-warm.webm",
+      "text": "For The Boards.",
+      "direction": "Warm and natural.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 2.25,
+        "peakDb": -12.4,
+        "averageDb": -32.7,
+        "noiseDb": -65,
+        "clipPercent": 0,
+        "leadingSilence": 0.83,
+        "trailingSilence": 0.83,
+        "quality": "warning",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "warning",
+            "text": "The voice is on the quiet side, but it may still clean up well."
+          },
+          {
+            "severity": "warning",
+            "text": "The average voice level is a little low."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:13:05.352Z"
+    },
+    {
+      "id": "08b",
+      "filename": "ftb-08b-brand-authoritative.webm",
+      "text": "For The Boards.",
+      "direction": "Authoritative and clean, without sounding dramatic.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 2.79,
+        "peakDb": -11.2,
+        "averageDb": -31.3,
+        "noiseDb": -64.5,
+        "clipPercent": 0,
+        "leadingSilence": 0.66,
+        "trailingSilence": 0.9,
+        "quality": "good",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "good",
+            "text": "The peak level has healthy recording headroom."
+          },
+          {
+            "severity": "warning",
+            "text": "The average voice level is a little low."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:13:12.669Z"
+    },
+    {
+      "id": "08c",
+      "filename": "ftb-08c-brand-reflective.webm",
+      "text": "For The Boards.",
+      "direction": "Soft and reflective. Let the final word settle.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 2.12,
+        "peakDb": -13.3,
+        "averageDb": -33.3,
+        "noiseDb": -64.9,
+        "clipPercent": 0,
+        "leadingSilence": 0.49,
+        "trailingSilence": 0.98,
+        "quality": "warning",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "The duration is in a natural range for this script."
+          },
+          {
+            "severity": "warning",
+            "text": "The voice is on the quiet side, but it may still clean up well."
+          },
+          {
+            "severity": "warning",
+            "text": "The average voice level is a little low."
+          },
+          {
+            "severity": "good",
+            "text": "The quiet portions have a useful noise floor."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:13:36.219Z"
+    },
+    {
+      "id": "09-room",
+      "filename": "ftb-09-room-tone.webm",
+      "text": "Do not read anything. Record ten seconds of silence in the same position and room.",
+      "direction": "Press record and remain completely silent for ten seconds. Do not move or touch the microphone.",
+      "mimeType": "audio/webm;codecs=opus",
+      "metrics": {
+        "duration": 10.54,
+        "peakDb": -41.9,
+        "averageDb": -64.4,
+        "noiseDb": -64.4,
+        "clipPercent": 0,
+        "leadingSilence": 10.54,
+        "trailingSilence": 10.54,
+        "quality": "good",
+        "notes": [
+          {
+            "severity": "good",
+            "text": "Room-tone duration is suitable for noise cleanup."
+          },
+          {
+            "severity": "good",
+            "text": "The measured room noise is low."
+          }
+        ]
+      },
+      "savedAt": "2026-07-12T08:13:54.802Z"
+    }
+  ]
+}

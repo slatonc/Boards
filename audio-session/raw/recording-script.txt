@@ -1,0 +1,94 @@
+1. Snippet 1 · Take A - Introduction
+Filename: ftb-01a-introduction-natural
+Direction: Natural and conversational. Warm, welcoming, and lightly smiling.
+Text: Hi, I’m Slaton Case—a physician and the author of For The Boards.
+
+2. Snippet 1 · Take B - Introduction
+Filename: ftb-01b-introduction-warm
+Direction: A little slower, warmer, and more personal. Keep the credentials understated.
+Text: Hi, I’m Slaton Case—a physician and the author of For The Boards.
+
+3. Snippet 2 · Take A - Why I wrote it
+Filename: ftb-02a-origin-natural
+Direction: Natural and conversational. Let the contrast between diagnosis and presentation land clearly.
+Text: I started writing this in residency because most study materials teach from a diagnosis. Patients—and board questions—start with a presentation.
+
+4. Snippet 2 · Take B - Why I wrote it
+Filename: ftb-02b-origin-reflective
+Direction: Reflective in the first sentence, then more conviction on the second.
+Text: I started writing this in residency because most study materials teach from a diagnosis. Patients—and board questions—start with a presentation.
+
+5. Snippet 3 · Take A - How the book works
+Filename: ftb-03a-method-natural
+Direction: Clear and conversational. Keep each item in the list distinct.
+Text: For The Boards starts with the symptoms and clues, then links them to the diagnosis: how to confirm it, treat it, monitor it, and separate look-alikes.
+
+6. Snippet 3 · Take B - How the book works
+Filename: ftb-03b-method-measured
+Direction: Slightly slower and more measured. Avoid rushing the list.
+Text: For The Boards starts with the symptoms and clues, then links them to the diagnosis: how to confirm it, treat it, monitor it, and separate look-alikes.
+
+7. Snippet 4 · Take A - Respecting their knowledge
+Filename: ftb-04a-knowledge-natural
+Direction: Reassuring and conversational. Gently emphasize “knowledge you already have.”
+Text: It’s built for the knowledge you already have—not to reteach medicine from scratch.
+
+8. Snippet 4 · Take B - Respecting their knowledge
+Filename: ftb-04b-knowledge-confident
+Direction: More confident and concise, without sounding defensive.
+Text: It’s built for the knowledge you already have—not to reteach medicine from scratch.
+
+9. Snippet 5 · Take A - Making it personal
+Filename: ftb-05a-personal-reference-natural
+Direction: Natural and encouraging. Keep this helpful rather than promotional.
+Text: Use it with your question bank. Add notes from wards and questions. Over time it becomes your personalized ABIM reference—something you trust and can hold in your hands.
+
+10. Snippet 5 · Take B - Making it personal
+Filename: ftb-05b-personal-reference-warm
+Direction: Warmer and more personal. Slow down on “something you trust and can hold in your hands.”
+Text: Use it with your question bank. Add notes from wards and questions. Over time it becomes your personalized ABIM reference—something you trust and can hold in your hands.
+
+11. Snippet 6 · Price A - Individual price
+Filename: ftb-06a-individual-price
+Direction: Straightforward and matter-of-fact. Do not turn it into a sales announcement.
+Text: Individual copies are sixty dollars.
+
+12. Snippet 6 · Price B - Program price
+Filename: ftb-06b-program-price
+Direction: Confident and clear, with light emphasis on “per resident.”
+Text: Bulk program pricing is fifty dollars per resident.
+
+13. Snippet 7 · Take A - Closing thought
+Filename: ftb-07a-closing-calm
+Direction: Calm and deliberate. Give each sentence its own beat.
+Text: Connect the symptoms. Make the diagnosis. Make the book your own.
+
+14. Snippet 7 · Take B - Closing thought
+Filename: ftb-07b-closing-energetic
+Direction: More energetic and aspirational, while remaining credible.
+Text: Connect the symptoms. Make the diagnosis. Make the book your own.
+
+15. Snippet 7 · Take C - Closing thought
+Filename: ftb-07c-closing-confident
+Direction: Quietly confident. Leave a full pause between every sentence.
+Text: Connect the symptoms. Make the diagnosis. Make the book your own.
+
+16. Snippet 8 · Take A - Product name
+Filename: ftb-08a-brand-warm
+Direction: Warm and natural.
+Text: For The Boards.
+
+17. Snippet 8 · Take B - Product name
+Filename: ftb-08b-brand-authoritative
+Direction: Authoritative and clean, without sounding dramatic.
+Text: For The Boards.
+
+18. Snippet 8 · Take C - Product name
+Filename: ftb-08c-brand-reflective
+Direction: Soft and reflective. Let the final word settle.
+Text: For The Boards.
+
+19. Final recording - Room tone
+Filename: ftb-09-room-tone
+Direction: Press record and remain completely silent for ten seconds. Do not move or touch the microphone.
+Text: Do not read anything. Record ten seconds of silence in the same position and room.
