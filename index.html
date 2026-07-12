@@ -3,68 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Ace the ABIM exam with For The Boards, a high-yield study companion designed for quick review alongside your question bank.">
+    <meta name="description" content="Most resources start with a diagnosis. Boards and patients start with a presentation. For The Boards links clues to diagnosis, treatment, and distinctions—then becomes your annotated, physical ABIM companion beside your Qbank.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
-    <title>For The Boards - Your High-Yield ABIM Study Companion</title>
+    <title>For The Boards | Presentation-first ABIM review you build with your Qbank</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <header>
-        <div class="logo">
-            <img src="assets/logo.svg" alt="For The Boards Logo">
-        </div>
+        <a class="logo" href="index.html" aria-label="For The Boards home">
+            <img class="logo-mark" src="assets/icon.svg" width="40" height="40" alt="">
+            <span class="logo-text">For The Boards</span>
+        </a>
         <nav>
             <ul class="menu">
-                <li><a href="#why-choose">Our Philosophy</a></li>
-                <li><a href="#preview">Our Guide</a></li>
+                <li><a href="#why-choose">Why it works</a></li>
+                <li><a href="#preview">Free samples</a></li>
                 <li><a href="#pricing">Pricing</a></li>
             </ul>
         </nav>
-        <button class="header-cta" onclick="window.location.href='#preview';">Get Free Sample</button>
+        <button class="header-cta" onclick="window.location.href='#preview';">Preview free samples</button>
     </header>
 
     <section class="hero">
         <div class="hero-text">
-            <h1>For The Boards: Your ABIM Study Companion</h1>
-            <p>Stop drowning in dense textbooks on tiny screens. "For The Boards" is the high-yield study companion designed for use with your favorite question bank that you can hold in your hand.</p>
-            <button class="cta-button" onclick="window.location.href='#preview';">Learn More</button>
+            <h1>Start with the presentation. End with a book that’s yours.</h1>
+            <p>Most resources teach from a diagnosis. Boards—and patients—start with clues. For The Boards connects presentation to diagnosis, then becomes the physical place you capture Qbank lessons.</p>
+            <button class="cta-button" onclick="window.location.href='#preview';">Preview free samples</button>
         </div>
     </section>
 
-    <section class="info-strip">
-        <div class="container">
-            <div class="info-point">
+    <section class="info-strip" aria-label="Key facts">
+        <ul class="info-strip-list container">
+            <li class="info-point">
                 <span class="info-number">200+</span>
-                <span class="info-label">Pages of Purely High-Yield Content</span>
-            </div>
-            <div class="info-point">
-                <span class="info-number">Designed</span>
-                <span class="info-label">Around the ABIM Blueprint</span>
-            </div>
-            <div class="info-point">
-                <span class="info-icon"><i class="fas fa-check-circle"></i></span>
-                <span class="info-label">Crowd sourced for errors</span>
-            </div>
-        </div>
+                <span class="info-label">Pages of high-yield content</span>
+            </li>
+            <li class="info-point">
+                <span class="info-number">Blueprint</span>
+                <span class="info-label">Aligned to the full ABIM exam outline</span>
+            </li>
+            <li class="info-point">
+                <a class="info-point-link" href="#pricing">
+                    <span class="info-number">$60</span>
+                    <span class="info-label">One book · no subscription</span>
+                </a>
+            </li>
+        </ul>
     </section>
 
     <section class="intro-video">
         <div class="container">
             <div class="video-content">
                 <div class="video-text">
-                    <h2>Meet the Creator</h2>
-                    <p>Hear directly from me about why "For The Boards" exists, who it’s for, and how to get the most out of it alongside your Qbank study.</p>
+                    <h2>60-second intro</h2>
+                    <p>How presentation-first review becomes a book you own—plus pricing.</p>
                 </div>
                 <div class="video-player">
                     <div class="video-frame">
-                        <video controls preload="metadata">
-                            <source src="assets/sales.mp4" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
+                        <iframe
+                            class="book-intro-embed"
+                            src="book-intro.html"
+                            title="For The Boards 60-second product introduction"
+                            loading="lazy"
+                            allow="autoplay"
+                        ></iframe>
                     </div>
                 </div>
             </div>
@@ -73,158 +82,209 @@
 
     <section id="why-choose" class="why-choose">
         <div class="container">
-            <h2>The Smarter Way to Study for the ABIM Boards</h2>
-            <p class="subtitle">"For The Boards" is a high-yield scaffold designed to complement your question bank study. It's an active study tool you'll transform into your single, personalized resource for final review.</p>
+            <h2>Why it works</h2>
             <div class="features">
                 <div class="feature feature-left">
-                    <img src="assets/active.png" alt="Active Learning Icon" class="feature-icon">
+                    <img src="assets/high-yield.png" alt="" class="feature-icon">
                     <div class="feature-text">
-                        <h3>Active Consolidation: Your Qbank's Perfect Partner</h3>
-                        <p>Forget passive reading. Use 'For The Boards' alongside your question bank preparation. If you learned something from the question -- consolidate. Find the topic in our guide and annotate it with key details, mnemonics, and personal reminders. This active process solidifies your learning.</p>
+                        <h3>Presentation-first, not diagnosis-first</h3>
+                        <p>Boards and patients open with a presentation. The book starts with symptoms and clues, then connects them to the diagnosis—how to confirm it, treat it, monitor it, and separate look-alikes. Organized around the ABIM blueprint, without textbook bulk.</p>
                     </div>
                 </div>
                 <div class="feature feature-right">
-                    <img src="assets/high-yield.png" alt="High-Yield Icon" class="feature-icon">
+                    <img src="assets/active.png" alt="" class="feature-icon">
                     <div class="feature-text">
-                        <h3>Laser-Focused & High-Yield: No Wasted Words</h3>
-                        <p>Your time is precious. We've stripped away the fluff. This guide sticks to the facts —- the characteristic symptoms, workups, and management principles most likely to be tested. It's clean, concise, and respects your time.</p>
+                        <h3>Built to sit next to your Qbank</h3>
+                        <p>Not a second curriculum. When a question teaches you something, find the card and write it in—mnemonics, next steps, traps—so the lesson sticks beside the high-yield scaffold.</p>
                     </div>
                 </div>
                 <div class="feature feature-left">
-                    <img src="assets/comprehensive.png" alt="Comprehensive Icon" class="feature-icon">
+                    <img src="assets/abim-style.png" alt="" class="feature-icon">
                     <div class="feature-text">
-                        <h3>Near complete ABIM Coverage: Designed around the ABIM Blueprint</h3>
-                        <p>We've attempted to write 'For The Boards' around the topics on the ABIM exam blueprint. Each chapter is meticulously crafted in a clear, easy-to-review format on the most testable material, ensuring you're prepared for exam day.</p>
-                    </div>
-                </div>
-                <div class="feature feature-right">
-                    <img src="assets/abim-style.png" alt="Personalized Guide Icon" class="feature-icon">
-                    <div class="feature-text">
-                        <h3>Create Your Personalized Review: The Ultimate Study Asset</h3>
-                        <p>The goal is to create a single, personalized resource for your final review. By adding your own notes from question banks, you transform this book into your primary, all-in-one study guide—a quick, easy, and super high-yield resource curated by you, for you.</p>
-                    </div>
-                </div>
-                <div class="feature feature-left">
-                    <img src="assets/community.png" alt="Community Icon" class="feature-icon">
-                    <div class="feature-text">
-                        <h3>A Living, Evolving Resource</h3>
-                        <p>'For The Boards' is a living resource. Please send additions or modifications to Slaton@ForTheBoards.com. Your feedback helps us keep the content accurate and the best resource available for future test-takers. If your suggestions are implemented (we update on a monthly basis), we will add your name to future editions and donate $5 to Doctors Without Borders.</p>
+                        <h3>Becomes your board book</h3>
+                        <p>Over residency it turns into a personalized ABIM reference: highlighted, annotated, and familiar because you built it—and you can hold it for final review.</p>
                     </div>
                 </div>
             </div>
+            <p class="subtitle feature-footnote">Living resource: send corrections or additions to <a href="mailto:Slaton@ForTheBoards.com">Slaton@ForTheBoards.com</a>. Implemented suggestions credit you in future editions and donate $5 to Doctors Without Borders.</p>
         </div>
     </section>
 
     <section id="preview" class="preview">
-        <div class="container">
-            <h2>Preview 'For The Boards'</h2>
-            <p class="subtitle">Take a sneak peek inside and see how our clean, high-yield format is the perfect companion for your Qbank study.</p>
-            <div class="carousel-container">
-                <div class="carousel-track"></div>
-                <div class="slider-indicator"></div>
+        <div class="container preview-layout">
+            <div class="preview-copy">
+                <h2>See the format</h2>
+                <p class="subtitle">High-yield cards that start from clinical clues—not a wall of textbook text. Annotate them as you do questions.</p>
+                <p class="preview-meta">Full guide · 12 specialties · ~200 pages · Updated July 2026</p>
+
+                <div class="page-picker" role="tablist" aria-label="Sample pages">
+                    <button type="button" class="page-picker-btn is-active" role="tab" aria-selected="true"
+                        data-page-image="assets/video-cardiology.png"
+                        data-page-pdf="assets/Cardiology_preview.pdf"
+                        data-page-title="Cardiology"
+                        data-page-pages="26"
+                        data-page-blurb="From presentation clues to diagnosis and contrast—then room to make it yours.">
+                        Cardiology
+                    </button>
+                    <button type="button" class="page-picker-btn" role="tab" aria-selected="false"
+                        data-page-image="assets/video-pulmonology.png"
+                        data-page-pdf="assets/Pulm_preview.pdf"
+                        data-page-title="Pulmonology"
+                        data-page-pages="21"
+                        data-page-blurb="Symptoms and branches first—then the distinctions that show up on boards.">
+                        Pulmonology
+                    </button>
+                    <button type="button" class="page-picker-btn" role="tab" aria-selected="false"
+                        data-page-image="assets/video-nephrology.png"
+                        data-page-pdf="assets/Neph_preview.pdf"
+                        data-page-title="Nephrology"
+                        data-page-pages="16"
+                        data-page-blurb="Clues that start the workup—linked to diagnosis, next steps, and look-alikes.">
+                        Nephrology
+                    </button>
+                </div>
+
+                <p class="page-showcase-blurb" id="pageShowcaseBlurb">From presentation clues to diagnosis and contrast—then room to make it yours.</p>
+                <button type="button" class="page-showcase-cta" id="pageShowcaseCta">Enlarge sample page</button>
+            </div>
+
+            <div class="page-showcase-visual">
+                <button type="button" class="page-frame" id="pageFrame" aria-label="Enlarge Cardiology sample page">
+                    <img
+                        id="pageShowcaseImage"
+                        src="assets/video-cardiology.png"
+                        alt="Sample page from Cardiology in For The Boards"
+                        width="1275"
+                        height="1650"
+                    >
+                    <span class="page-frame-hint" aria-hidden="true">
+                        <span class="page-frame-hint-icon">⤢</span>
+                        Click to enlarge
+                    </span>
+                </button>
             </div>
         </div>
-        <div class="modal" id="pdfModal">
-            <div class="modal-content">
-                <button class="modal-close" id="modalClose">×</button>
-                <div class="modal-introduction">
-                    <h3>Experience the 'For The Boards' Difference</h3>
-                    <p>This is a sample of our high-yield, quick-review format. See how it provides the "must-know" information, perfect for annotating as you work through your question bank. Get the full guide for complete ABIM blueprint coverage.</p>
-                    <a href="#pricing" class="modal-cta" id="modalCTA">Get the Full Guide</a>
+
+        <div class="page-lightbox" id="pageLightbox" hidden>
+            <button type="button" class="page-lightbox-backdrop" id="pageLightboxBackdrop" aria-label="Close enlarged page"></button>
+            <div class="page-lightbox-panel" role="dialog" aria-modal="true" aria-labelledby="pageLightboxTitle">
+                <button type="button" class="page-lightbox-close" id="pageLightboxClose" aria-label="Close"></button>
+                <img
+                    id="pageLightboxImage"
+                    src="assets/video-cardiology.png"
+                    alt="Enlarged sample page from Cardiology"
+                    width="1275"
+                    height="1650"
+                >
+                <div class="page-lightbox-footer">
+                    <div class="page-lightbox-copy">
+                        <p id="pageLightboxTitle" class="page-lightbox-title">Cardiology</p>
+                        <p id="pageLightboxMeta" class="page-lightbox-meta">Sample page · Updated July 2026</p>
+                    </div>
+                    <a class="page-lightbox-pdf" id="pageLightboxPdf" href="assets/Cardiology_preview.pdf" target="_blank" rel="noopener noreferrer">Open PDF</a>
                 </div>
-                <iframe id="pdfViewer" src=""></iframe>
-                <a class="modal-download" id="pdfDownload" href="#" download>Download PDF</a>
             </div>
         </div>
     </section>
 
     <section id="pricing" class="cta-section">
-        <h2>Invest in Your Future: Secure Your Copy of 'For The Boards' Today</h2>
-        <p>Don't leave your success to chance. Invest in the ultimate study companion and conquer the ABIM exam.</p>
-        <div class="button-container">
-            <button class="option-button active" data-target="doctors-section">
-                <i class="fas fa-user"></i> Residents
-            </button>
-            <button class="option-button" data-target="programs-section">
-                <i class="fas fa-desktop"></i> Programs
-            </button>
+        <div class="pricing-header">
+            <h2>Simple pricing</h2>
+            <p>Buy a copy yourself, or equip your whole program.</p>
         </div>
-        <div id="doctors-section" data-pricing-panel>
-            <div class="product-boxes">
-                <div class="product-box">
-                    <h3 class="preferred">Physical Book</h3>
-                    <div class="price">$60</div>
-                    <p>The perfect physical companion for your digital Qbank. Highlight, annotate, and create the ultimate personalized study guide for the ABIM exam.</p>
-                    <a href="https://buy.stripe.com/4gM5kFc7m2CO8dz76cbAs00" style="text-decoration: none;">
-                      <button class="buy-now-button">BUY NOW AND PASS</button>
-                    </a>
-                    <ul>
-                        <li><i class="fas fa-check"></i>Proven more effective for active learning and retention</li>
-                        <li><i class="fas fa-check"></i>The perfect way to reduce screen time during long study sessions</li>
-                        <li><i class="fas fa-check"></i>Frame after passing - honor your efforts!</li>
-                    </ul>
+        <div class="product-boxes">
+            <article class="product-box">
+                <h3>Individual copy</h3>
+                <div class="price-block">
+                    <div class="price"><span class="price-currency">$</span>60</div>
                 </div>
-            </div>
-        </div>
-        <div id="programs-section" data-pricing-panel hidden>
-            <div class="product-boxes">
-                <div class="product-box">
-                    <h3>Equip Your Residents for Success: Bulk Pricing for Programs</h3>
-                    <p>The first job of a residency program is to prepare residents for independent practice. The next is to prepare residents to pass the Boards. We developed "For The Boards" to be an effective, inexpensive tool built to complement question banks -- which should be the primary resource for Board preparation. We offer exclusive bulk pricing to ensure every resident in your program has access to this game-changing tool.<br><br><strong>Benefits for Programs:</strong><br>- <strong>Higher Pass Rates:</strong> Equip your residents with the best resource to ensure ABIM success.<br>- <strong>Improved Program Reputation:</strong> Attract top talent by demonstrating your commitment to resident education.<br>- <strong>Cost-Effective Solution:</strong> Bulk discounts make 'For The Boards' an affordable investment with a high ROI.<br>- <strong>Dedicated Support:</strong> We work closely with program directors to ensure seamless implementation and ongoing support.</p>
-                    <button class="email-us-button" data-contact-trigger>GET A CUSTOM QUOTE</button>
+                <p class="product-desc">Presentation-first review you can annotate beside your Qbank—and hold for final review.</p>
+                <ul>
+                    <li><i class="fas fa-check" aria-hidden="true"></i>Clues → diagnosis → next steps</li>
+                    <li><i class="fas fa-check" aria-hidden="true"></i>Built for Qbank annotation</li>
+                    <li><i class="fas fa-check" aria-hidden="true"></i>Less screen time for final review</li>
+                </ul>
+                <a class="buy-now-button" href="https://buy.stripe.com/4gM5kFc7m2CO8dz76cbAs00">Order your copy</a>
+                <p class="shipping-note">Arrives in 2–3 weeks</p>
+            </article>
+            <article class="product-box">
+                <h3>Bulk order</h3>
+                <div class="price-block">
+                    <div class="price"><span class="price-currency">$</span>50</div>
+                    <p class="price-unit">per resident</p>
                 </div>
-            </div>
+                <p class="product-desc">Same book for every resident—at a lower price for program orders.</p>
+                <ul>
+                    <li><i class="fas fa-check" aria-hidden="true"></i>Volume pricing for your class</li>
+                    <li><i class="fas fa-check" aria-hidden="true"></i>Complements existing Qbanks</li>
+                    <li><i class="fas fa-check" aria-hidden="true"></i>Simple ordering & support</li>
+                </ul>
+                <button class="email-us-button" type="button" data-contact-trigger>Request a quote</button>
+                <p class="shipping-note">Arrives in 2–3 weeks</p>
+            </article>
         </div>
     </section>
 
     <footer>
-        <p>© 2025 For The Boards. All rights reserved.</p>
-        <p><a href="index.html">For The Boards</a> | <a href="privacy.html">Privacy Policy</a> | <a href="terms.html">Terms of Use</a></p>
-        <p>Are you a residency program interested in our product? <span class="footer-contact-trigger" data-contact-trigger>Contact us</span> for more information.</p>
-        <p><em>ABIM ® is a registered trademark of the American Board of Internal Medicine.</em></p>
+        <div class="footer-inner">
+            <p class="footer-main">
+                <span class="footer-copy">© 2026 For The Boards</span>
+                <span class="footer-sep" aria-hidden="true">·</span>
+                <a href="privacy.html">Privacy</a>
+                <span class="footer-sep" aria-hidden="true">·</span>
+                <a href="terms.html">Terms</a>
+                <span class="footer-sep" aria-hidden="true">·</span>
+                <span class="footer-contact-trigger" data-contact-trigger role="button" tabindex="0">Program pricing</span>
+            </p>
+            <p class="footer-legal"><em>ABIM® is a registered trademark of the American Board of Internal Medicine. Not affiliated with or endorsed by ABIM.</em></p>
+        </div>
     </footer>
 
-    <div class="modal" id="contactModal">
+    <div class="modal" id="contactModal" role="dialog" aria-modal="true" aria-labelledby="contactModalTitle" hidden>
         <div class="modal-content contact-modal-content">
-            <button class="modal-close" id="contactClose">×</button>
+            <button class="modal-close" id="contactClose" type="button" aria-label="Close contact form"></button>
             <form action="https://formspree.io/f/xgvpggoz" method="POST" class="contact-form">
-                <h3>Thank you for your interest!</h3>
-                <p>Please submit this form, and we will contact you shortly.</p>
+                <div class="contact-form-header">
+                    <h3 id="contactModalTitle">Request a bulk quote</h3>
+                    <p class="contact-form-lead">Tell us how to reach you. We’ll follow up with bulk pricing and next steps.</p>
+                </div>
 
-                <label>
-                    Your Name
-                    <input type="text" name="name" required>
-                </label>
+                <div class="contact-form-grid">
+                    <label class="contact-field">
+                        <span class="contact-label">Name</span>
+                        <input type="text" name="name" required autocomplete="name" placeholder="Full name">
+                    </label>
 
-                <label>
-                    Email
-                    <input type="email" name="_replyto" required>
-                </label>
+                    <label class="contact-field">
+                        <span class="contact-label">Email</span>
+                        <input type="email" name="_replyto" required autocomplete="email" placeholder="you@institution.edu">
+                    </label>
 
-                <label>
-                    Phone Number
-                    <input type="tel" name="phone-number">
-                </label>
+                    <label class="contact-field">
+                        <span class="contact-label">Phone</span>
+                        <input type="tel" name="phone" required autocomplete="tel" placeholder="(555) 555-5555">
+                    </label>
 
-                <label>
-                    Institution Name
-                    <input type="text" name="institution-name">
-                </label>
+                    <label class="contact-field">
+                        <span class="contact-label">Best time to call</span>
+                        <input type="text" name="best-time-to-call" required placeholder="e.g. Weekdays 9–11 a.m. PT">
+                    </label>
 
-                <label>
-                    Number of Learners Per Year in Your Institution
-                    <input type="number" name="learners-count" min="1">
-                </label>
+                    <label class="contact-field contact-field--full">
+                        <span class="contact-label">Number of books</span>
+                        <input type="number" name="number-of-books" required min="1" step="1" inputmode="numeric" placeholder="e.g. 24">
+                    </label>
 
-                <label>
-                    Message
-                    <textarea name="message" rows="5" required></textarea>
-                </label>
+                    <label class="contact-field contact-field--full">
+                        <span class="contact-label">Note <span class="label-optional">optional</span></span>
+                        <textarea name="note" rows="3" placeholder="Program name, shipping address, timing, or other details"></textarea>
+                    </label>
+                </div>
 
-                <input type="hidden" name="_subject" value="New inquiry from ForTheBoards.com">
-                <input type="hidden" name="form-name" value="contact-form">
+                <input type="hidden" name="_subject" value="Bulk quote request — ForTheBoards.com">
+                <input type="hidden" name="form-name" value="program-quote">
                 <p class="form-status" data-form-status aria-live="polite"></p>
-                <button type="submit" class="contact-submit">Send Message</button>
+                <button type="submit" class="contact-submit">Submit request</button>
             </form>
         </div>
     </div>

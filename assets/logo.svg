@@ -1,13 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100" role="img" aria-label="For the Boards logo">
-  <!-- Stethoscope Circle -->
-  <circle cx="50" cy="50" r="30" fill="#4A90E2" />
-
-  <!-- Stethoscope Handle -->
-  <path d="M50,80 Q50,60 70,50" fill="none" stroke="#4A90E2" stroke-width="4" />
-  <circle cx="70" cy="50" r="4" fill="#4A90E2" />
-
-  <!-- Text -->
-  <text x="90" y="55" font-family="Arial, sans-serif" font-size="28" fill="#333" font-weight="bold">
-    For the Boards
-  </text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" role="img" aria-label="For The Boards">
+  <!-- Mark -->
+  <rect x="0" y="4" width="48" height="48" rx="12" fill="#0c223f"/>
+  <circle cx="12" cy="18" r="2" fill="#83c8ff"/>
+  <circle cx="20" cy="18" r="2" fill="#83c8ff"/>
+  <circle cx="28" cy="18" r="2" fill="#83c8ff"/>
+  <path d="M12 18h16" fill="none" stroke="#83c8ff" stroke-width="1.4" stroke-linecap="round"/>
+  <circle cx="36" cy="18" r="2.8" fill="#5ecf8a"/>
+  <text
+    x="24"
+    y="38"
+    text-anchor="middle"
+    font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif"
+    font-size="11"
+    font-weight="800"
+    fill="#ffffff"
+    letter-spacing="0.8"
+  >FTB</text>
+  <!-- Wordmark -->
+  <text
+    x="60"
+    y="35"
+    font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif"
+    font-size="22"
+    font-weight="700"
+    fill="#0c223f"
+    letter-spacing="-0.3"
+  >For The Boards</text>
 </svg>

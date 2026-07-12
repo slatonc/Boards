@@ -1,16 +1,14 @@
-console.log('script.js loaded');
-
 // Smooth scrolling for menu links
-document.querySelectorAll('.menu a, .modal-cta').forEach(anchor => {
+document.querySelectorAll('.menu a').forEach(anchor => {
     anchor.addEventListener('click', function(e) {
-        e.preventDefault();
         const targetId = this.getAttribute('href');
-        document.querySelector(targetId).scrollIntoView({
-            behavior: 'smooth'
-        });
-        if (this.classList.contains('modal-cta')) {
-            document.getElementById('pdfModal').style.display = 'none';
-        }
+        if (!targetId || !targetId.startsWith('#')) return;
+
+        const target = document.querySelector(targetId);
+        if (!target) return;
+
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth' });
     });
 });
 
@@ -47,146 +45,130 @@ if (headerCta && hero) {
     updateHeaderCtaVisibility();
 }
 
-// Toggle Button Functionality for Pricing
-const pricingPanels = document.querySelectorAll('[data-pricing-panel]');
-const pricingButtons = document.querySelectorAll('.option-button');
+// Sample page showcase — enlarge page image in a lightbox
+const pagePickerButtons = document.querySelectorAll(".page-picker-btn");
+const pageShowcaseImage = document.getElementById("pageShowcaseImage");
+const pageShowcaseBlurb = document.getElementById("pageShowcaseBlurb");
+const pageShowcaseCta = document.getElementById("pageShowcaseCta");
+const pageFrame = document.getElementById("pageFrame");
+const pageLightbox = document.getElementById("pageLightbox");
+const pageLightboxBackdrop = document.getElementById("pageLightboxBackdrop");
+const pageLightboxClose = document.getElementById("pageLightboxClose");
+const pageLightboxImage = document.getElementById("pageLightboxImage");
+const pageLightboxTitle = document.getElementById("pageLightboxTitle");
+const pageLightboxMeta = document.getElementById("pageLightboxMeta");
+const pageLightboxPdf = document.getElementById("pageLightboxPdf");
 
-const setActivePricingPanel = (button) => {
-    if (!button) {
-        console.log('No button provided to setActivePricingPanel');
-        return;
-    }
-
-    const targetId = button.dataset.target;
-    const targetSection = document.getElementById(targetId);
-
-    if (!targetSection) {
-        console.log('No target section found for:', targetId);
-        return;
-    }
-
-    console.log(`Pricing toggle activated: ${targetId}`);
-
-    pricingButtons.forEach(btn => btn.classList.remove('active'));
-    button.classList.add('active');
-
-    pricingPanels.forEach(panel => {
-        const isTarget = panel === targetSection;
-        panel.hidden = !isTarget;
-        panel.style.display = isTarget ? 'block' : 'none';
-    });
+let pageLightboxLastFocus = null;
+let activeSample = {
+    image: "assets/video-cardiology.png",
+    pdf: "assets/Cardiology_preview.pdf",
+    title: "Cardiology",
+    pages: 26,
+    blurb: "From presentation clues to diagnosis and contrast—then room to make it yours."
 };
 
-// Add click listeners to each button
-pricingButtons.forEach(button => {
-    button.addEventListener('click', event => {
-        event.preventDefault();
-        setActivePricingPanel(button);
-    });
-});
+function setActiveSample(button) {
+    if (!button) return;
 
-pricingButtons.forEach(button => {
-    button.addEventListener('keydown', event => {
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            setActivePricingPanel(button);
-        }
-    });
-});
+    activeSample = {
+        image: button.dataset.pageImage,
+        pdf: button.dataset.pagePdf,
+        title: button.dataset.pageTitle,
+        pages: button.dataset.pagePages ? Number(button.dataset.pagePages) : null,
+        blurb: button.dataset.pageBlurb || ""
+    };
 
-const initiallyActive = document.querySelector('.option-button.active') || pricingButtons[0];
-if (initiallyActive) {
-    setActivePricingPanel(initiallyActive);
+    pagePickerButtons.forEach((btn) => {
+        const isActive = btn === button;
+        btn.classList.toggle("is-active", isActive);
+        btn.setAttribute("aria-selected", String(isActive));
+    });
+
+    if (pageShowcaseImage) {
+        pageShowcaseImage.src = activeSample.image;
+        pageShowcaseImage.alt = `Sample page from ${activeSample.title} in For The Boards`;
+    }
+    if (pageShowcaseBlurb) pageShowcaseBlurb.textContent = activeSample.blurb;
+    if (pageFrame) {
+        pageFrame.setAttribute("aria-label", `Enlarge ${activeSample.title} sample page`);
+    }
 }
 
-// Card data
-const cardsData = [
-    { title: "Cardiology", topics: "23 pages", date: "Up to date as of 01/2026", pdf: "assets/Cardiology_preview.pdf" },
-    { title: "Pulmonology", topics: "17 pages", date: "Up to date as of 01/2026", pdf: "assets/Pulm_preview.pdf" },
-    { title: "Nephrology", topics: "13 pages", date: "Up to date as of 01/2026", pdf: "assets/Neph_preview.pdf" },
-    { title: "Gastro/Hepatology", topics: "24 pages", date: "Up to date as of 01/2026", pdf: "assets/GI_preivew.pdf" },
-    { title: "Infectious Disease", topics: "20 pages", date: "Up to date as of 01/2026", pdf: "assets/ID_preview.pdf" },
-    { title: "Endocrinology", topics: "21 pages", date: "Up to date as of 01/2026", pdf: "assets/Endo_preview.pdf" },
-    { title: "Hematology", topics: "22 pages", date: "Up to date as of 01/2026", pdf: "assets/Heme_preview.pdf" },
-    { title: "Oncology", topics: "12 pages", date: "Up to date as of 01/2026", pdf: "assets/Onc_preview.pdf" },
-    { title: "Rheumatology", topics: "12 pages", date: "Up to date as of 01/2026", pdf: "assets/Rheum_preview.pdf" },
-    { title: "Neurology", topics: "12 pages", date: "Up to date as of 01/2026", pdf: "assets/Neuro_preview.pdf" },
-    { title: "General Internal Medicine", topics: "18 pages", date: "Up to date as of 01/2026", pdf: "assets/GIM_preview.pdf" },
-    { title: "Subspecialties", topics: "18 pages", date: "Up to date as of 01/2026", pdf: "assets/Subspecialty_preview.pdf" },
-];
+function openPageLightbox() {
+    if (!pageLightbox) return;
 
-// Function to create a card
-function createCard(data) {
-    const card = document.createElement("div");
-    card.classList.add("carousel-card");
-    card.innerHTML = `
-        <div class="card-content">
-            <h3>${data.title}</h3>
-            <p><strong>${data.topics}</strong></p>
-            <p>${data.date}</p>
-            <div class="download-sample">
-                <img src="assets/thumbnail.png" alt="Sample Topic" class="file-thumbnail"> 
-                <span>Preview</span>
-            </div>
-        </div>
-    `;
+    pageLightboxLastFocus = document.activeElement;
 
-    // Add event listener to the entire "download-sample" div
-    const downloadSample = card.querySelector(".download-sample");
-    downloadSample.addEventListener("click", () => {
-        const modal = document.getElementById("pdfModal");
-        modal.querySelector("#pdfViewer").src = data.pdf;
-        modal.querySelector("#pdfDownload").href = data.pdf;
-        modal.style.display = "flex";
-    });
+    if (pageLightboxImage) {
+        pageLightboxImage.src = activeSample.image;
+        pageLightboxImage.alt = `Enlarged sample page from ${activeSample.title}`;
+    }
+    if (pageLightboxTitle) {
+        pageLightboxTitle.textContent = activeSample.title;
+    }
+    if (pageLightboxMeta) {
+        const pageLabel = activeSample.pages
+            ? `~${activeSample.pages} pages in the full guide`
+            : "Sample page from the full guide";
+        pageLightboxMeta.textContent = `${pageLabel} · Updated July 2026`;
+    }
+    if (pageLightboxPdf) {
+        pageLightboxPdf.href = activeSample.pdf;
+    }
 
-    return card;
-}
-
-// Initialize the carousel
-function initCarousel() {
-    const carouselTrack = document.querySelector(".carousel-track");
-    const sliderIndicator = document.querySelector(".slider-indicator");
-
-    cardsData.forEach(data => {
-        const card = createCard(data);
-        carouselTrack.appendChild(card);
-        if (window.innerWidth <= 768) {
-            const dot = document.createElement("span");
-            dot.classList.add("dot");
-            dot.addEventListener("click", () => carouselTrack.scrollLeft = card.offsetLeft);
-            sliderIndicator.appendChild(dot);
-        }
-    });
-
-    if (window.innerWidth > 768) {
-        document.querySelectorAll(".carousel-card").forEach(card => {
-            const clone = card.cloneNode(true);
-            carouselTrack.appendChild(clone);
+    pageLightbox.hidden = false;
+    document.body.style.overflow = "hidden";
+    // Double rAF so the browser paints the closed state before animating open
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            pageLightbox.classList.add("is-open");
         });
-    }
+    });
 
-    if (window.innerWidth <= 768) {
-        updateActiveDot();
-        carouselTrack.addEventListener("scroll", updateActiveDot);
-    }
+    if (pageLightboxClose) pageLightboxClose.focus();
 }
 
-function updateActiveDot() {
-    const track = document.querySelector(".carousel-track");
-    const dots = document.querySelectorAll(".slider-indicator .dot");
-    const cardWidth = document.querySelector(".carousel-card").offsetWidth;
-    let activeIndex = Math.round(track.scrollLeft / cardWidth);
-    dots.forEach((dot, index) => dot.classList.toggle("active", index === activeIndex));
+function closePageLightbox() {
+    if (!pageLightbox) return;
+
+    pageLightbox.classList.remove("is-open");
+    document.body.style.overflow = "";
+
+    const finish = () => {
+        pageLightbox.hidden = true;
+        if (pageLightboxLastFocus && typeof pageLightboxLastFocus.focus === "function") {
+            pageLightboxLastFocus.focus();
+        }
+        pageLightboxLastFocus = null;
+    };
+
+    // Short delay so fade-out can play
+    window.setTimeout(finish, 180);
 }
 
-initCarousel();
+if (pagePickerButtons.length) {
+    pagePickerButtons.forEach((button) => {
+        button.addEventListener("click", () => setActiveSample(button));
+    });
+    const initiallyActive = document.querySelector(".page-picker-btn.is-active") || pagePickerButtons[0];
+    setActiveSample(initiallyActive);
+}
 
-// Modal functionality
-const modalClose = document.getElementById("modalClose");
-const pdfModal = document.getElementById("pdfModal");
-if (modalClose && pdfModal) {
-    modalClose.addEventListener("click", () => pdfModal.style.display = "none");
+if (pageShowcaseCta) {
+    pageShowcaseCta.addEventListener("click", openPageLightbox);
+}
+
+if (pageFrame) {
+    pageFrame.addEventListener("click", openPageLightbox);
+}
+
+if (pageLightboxClose) {
+    pageLightboxClose.addEventListener("click", closePageLightbox);
+}
+
+if (pageLightboxBackdrop) {
+    pageLightboxBackdrop.addEventListener("click", closePageLightbox);
 }
 
 const contactModal = document.getElementById("contactModal");
@@ -204,7 +186,9 @@ const focusFirstTrigger = () => {
 
 const openContactModal = () => {
     if (!contactModal) return;
+    contactModal.hidden = false;
     contactModal.style.display = "flex";
+    document.body.style.overflow = "hidden";
     contactTriggers.forEach(trigger => trigger.setAttribute("aria-expanded", "true"));
     const firstField = contactForm ? contactForm.querySelector('input, textarea, select') : null;
     if (firstField) {
@@ -214,7 +198,9 @@ const openContactModal = () => {
 
 const closeContactModal = () => {
     if (!contactModal) return;
+    contactModal.hidden = true;
     contactModal.style.display = "none";
+    document.body.style.overflow = "";
     contactTriggers.forEach(trigger => trigger.setAttribute("aria-expanded", "false"));
     focusFirstTrigger();
 };
@@ -240,10 +226,6 @@ if (contactClose && contactModal) {
 }
 
 window.addEventListener("click", event => {
-    if (pdfModal && event.target === pdfModal) {
-        pdfModal.style.display = "none";
-    }
-
     if (contactModal && event.target === contactModal) {
         closeContactModal();
     }
@@ -251,10 +233,10 @@ window.addEventListener("click", event => {
 
 document.addEventListener("keydown", event => {
     if (event.key === "Escape") {
-        if (pdfModal && pdfModal.style.display === "flex") {
-            pdfModal.style.display = "none";
+        if (pageLightbox && !pageLightbox.hidden) {
+            closePageLightbox();
         }
-        if (contactModal && contactModal.style.display === "flex") {
+        if (contactModal && !contactModal.hidden) {
             closeContactModal();
         }
     }
@@ -265,7 +247,7 @@ if (contactForm && contactSubmitButton) {
         event.preventDefault();
 
         if (contactFormStatus) {
-            contactFormStatus.textContent = 'Sending...';
+            contactFormStatus.textContent = 'Sending your request…';
         }
 
         contactSubmitButton.disabled = true;
@@ -282,7 +264,7 @@ if (contactForm && contactSubmitButton) {
 
             if (response.ok) {
                 if (contactFormStatus) {
-                    contactFormStatus.textContent = 'Thanks! We will get back to you soon.';
+                    contactFormStatus.textContent = 'Thanks — we’ll be in touch shortly.';
                 }
                 contactForm.reset();
                 setTimeout(() => {
@@ -290,10 +272,10 @@ if (contactForm && contactSubmitButton) {
                         contactFormStatus.textContent = '';
                     }
                     closeContactModal();
-                }, 1600);
+                }, 1800);
             } else {
                 const data = await response.json().catch(() => null);
-                const errorMessage = data && data.error ? data.error : 'There was a problem sending your message.';
+                const errorMessage = data && data.error ? data.error : 'Something went wrong. Please try again.';
                 if (contactFormStatus) {
                     contactFormStatus.textContent = errorMessage;
                 }
