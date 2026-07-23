@@ -24,7 +24,7 @@
             number: 'Snippet 2 · Take A',
             title: 'Why I wrote it',
             direction: 'Natural and conversational. Let the contrast between diagnosis and presentation land clearly.',
-            text: 'I started writing this in residency because most study materials teach from a diagnosis. Patients—and board questions—start with a presentation.'
+            text: 'I wrote For The Boards in residency because most study materials teach from a diagnosis. Patients—and board questions—start with a presentation.'
         },
         {
             id: '02b',
@@ -32,7 +32,7 @@
             number: 'Snippet 2 · Take B',
             title: 'Why I wrote it',
             direction: 'Reflective in the first sentence, then more conviction on the second.',
-            text: 'I started writing this in residency because most study materials teach from a diagnosis. Patients—and board questions—start with a presentation.'
+            text: 'I wrote For The Boards in residency because most study materials teach from a diagnosis. Patients—and board questions—start with a presentation.'
         },
         {
             id: '03a',
