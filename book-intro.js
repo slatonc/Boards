@@ -17,7 +17,7 @@
 
     const captions = [
         { start: 0, end: 5.987, text: 'Hi, I’m Slaton Case—a physician and the author of For The Boards.' },
-        { start: 5.987, end: 12.10, text: 'I started writing this in residency because most study materials teach from a diagnosis.' },
+        { start: 5.987, end: 12.10, text: 'I wrote For The Boards in residency because most study materials teach from a diagnosis.' },
         { start: 12.10, end: 16.976, text: 'Patients—and board questions—start with a presentation.' },
         { start: 16.976, end: 20.25, text: 'For The Boards starts with the symptoms and clues,' },
         { start: 20.25, end: 23.19, text: 'then links them to the diagnosis:' },
