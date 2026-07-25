@@ -1,0 +1,69 @@
+name = "fortheboards-fulfillment"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+
+# Idempotency store — keeps a Stripe webhook retry from printing a second book.
+# Sandbox/dev uses its own namespace so test orders never collide with real ones.
+[[kv_namespaces]]
+binding = "FULFILLMENT"
+id = "2e079500ea2e4431bcbe303214ecda67"
+preview_id = "8ab0b23b01de448091554cd8ac2db6b2"
+
+# Non-secret config. Secrets are set separately — see README.
+[vars]
+LULU_API_BASE = "https://api.sandbox.lulu.com"
+BOOK_TITLE = "For The Boards"
+LULU_CONTACT_EMAIL = "slaton@fortheboards.com"
+
+# The Lulu SKU encoding trim size, color, binding, and paper. Decoded from the
+# ForTheBoards project: US Letter 8.5x11, color, perfect bound paperback,
+# 60# uncoated white, matte cover. 202 pages, $13.51 print cost.
+# Verify with: node find-sku.mjs --trim 8.5x11 --color FC --bind PB \
+#   --paper 060UW444 --finish MXX --pages 202
+POD_PACKAGE_ID = "0850X1100FCSTDPB060UW444MXX"
+
+# Publicly reachable, unauthenticated PDF URLs. Lulu fetches these server-side
+# on the FIRST print job only.
+INTERIOR_PDF_URL = "REPLACE_WITH_INTERIOR_PDF_URL"
+COVER_PDF_URL = "REPLACE_WITH_COVER_PDF_URL"
+
+# Once that first job validates, Lulu stores the normalized files and returns a
+# printable_id. Set it here and the PDF URLs are never fetched again — you can
+# take the hosted files down. Clear it when you publish a new edition.
+# LULU_PRINTABLE_ID = "11606ab3-9355-46d3-ae90-338db6f5d271"
+
+# MAIL | PRIORITY_MAIL | GROUND_HD | GROUND_BUS | GROUND | EXPEDITED | EXPRESS
+SHIPPING_LEVEL = "MAIL"
+
+# Minutes before the job enters production (60–2880). This is your window to
+# cancel a fraudulent or mistaken order before it costs you a printed book.
+PRODUCTION_DELAY = "120"
+
+# Used only if Stripe didn't capture a phone number.
+FALLBACK_PHONE = "773-543-0603"
+
+[env.production]
+name = "fortheboards-fulfillment-prod"
+# The stable workers.dev URL is what Stripe posts to. Per-version preview URLs
+# are off — no reason to expose extra public endpoints on a payment webhook.
+workers_dev = true
+preview_urls = false
+
+[env.production.vars]
+LULU_API_BASE = "https://api.lulu.com"
+BOOK_TITLE = "For The Boards"
+LULU_CONTACT_EMAIL = "slaton@fortheboards.com"
+POD_PACKAGE_ID = "0850X1100FCSTDPB060UW444MXX"
+
+# Lulu holds the normalized 2026.08 edition files under this id, so no PDF URLs
+# are needed and nothing has to stay hosted. Minted with mint-printable.mjs.
+# For a new edition: mint a fresh id and replace this.
+LULU_PRINTABLE_ID = "94e2cf95-1f59-4bb3-987c-0f56773a79c1"
+
+SHIPPING_LEVEL = "MAIL"
+PRODUCTION_DELAY = "120"
+FALLBACK_PHONE = "773-543-0603"
+
+[[env.production.kv_namespaces]]
+binding = "FULFILLMENT"
+id = "3350c262a8ad44b6aa0bb9b419563d40"
