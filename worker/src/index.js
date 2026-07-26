@@ -58,6 +58,9 @@ export default {
         idempotencyKey(session.id),
         JSON.stringify({ state: 'done', printJobId: printJob.id, at: new Date().toISOString() })
       );
+      // Logged on success too, so an order can be traced from `wrangler tail`
+      // without going digging in KV for the job id.
+      console.log(`Fulfilled ${session.id} -> Lulu print job ${printJob.id}`);
       return Response.json({ ok: true, printJobId: printJob.id });
     } catch (err) {
       // Release the claim so Stripe's retry can try again.
@@ -116,6 +119,7 @@ async function handleLulu(request, env) {
   }
 
   await env.FULFILLMENT.put(key, JSON.stringify({ notified: recipient, at: new Date().toISOString() }));
+  console.log(`Print job ${data.id} shipped -> notified ${recipient}`);
   return Response.json({ ok: true, notified: recipient });
 }
 

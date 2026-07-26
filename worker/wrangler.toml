@@ -22,15 +22,11 @@ LULU_CONTACT_EMAIL = "slaton@fortheboards.com"
 #   --paper 060UW444 --finish MXX --pages 202
 POD_PACKAGE_ID = "0850X1100FCSTDPB060UW444MXX"
 
-# Publicly reachable, unauthenticated PDF URLs. Lulu fetches these server-side
-# on the FIRST print job only.
-INTERIOR_PDF_URL = "REPLACE_WITH_INTERIOR_PDF_URL"
-COVER_PDF_URL = "REPLACE_WITH_COVER_PDF_URL"
-
-# Once that first job validates, Lulu stores the normalized files and returns a
-# printable_id. Set it here and the PDF URLs are never fetched again — you can
-# take the hosted files down. Clear it when you publish a new edition.
-# LULU_PRINTABLE_ID = "11606ab3-9355-46d3-ae90-338db6f5d271"
+# Sandbox is a separate Lulu account with its own credentials and its own
+# printables, so it needs its own id minted there before this env can fulfill:
+#   node mint-printable.mjs --interior <url> --cover <url>
+# Alternatively set INTERIOR_PDF_URL and COVER_PDF_URL to normalize on the fly.
+# LULU_PRINTABLE_ID = "..."
 
 # MAIL | PRIORITY_MAIL | GROUND_HD | GROUND_BUS | GROUND | EXPEDITED | EXPRESS
 SHIPPING_LEVEL = "MAIL"
