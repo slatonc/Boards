@@ -42,6 +42,11 @@ PRODUCTION_DELAY = "120"
 # Used only if Stripe didn't capture a phone number.
 FALLBACK_PHONE = "773-543-0603"
 
+# Sender for shipping notifications. This address must be verified in Brevo,
+# or every send is rejected.
+EMAIL_FROM = "slaton@fortheboards.com"
+EMAIL_FROM_NAME = "For The Boards"
+
 [env.production]
 name = "fortheboards-fulfillment-prod"
 # The stable workers.dev URL is what Stripe posts to. Per-version preview URLs
@@ -63,6 +68,8 @@ LULU_PRINTABLE_ID = "94e2cf95-1f59-4bb3-987c-0f56773a79c1"
 SHIPPING_LEVEL = "MAIL"
 PRODUCTION_DELAY = "120"
 FALLBACK_PHONE = "773-543-0603"
+EMAIL_FROM = "slaton@fortheboards.com"
+EMAIL_FROM_NAME = "For The Boards"
 
 [[env.production.kv_namespaces]]
 binding = "FULFILLMENT"

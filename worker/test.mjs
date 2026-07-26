@@ -27,6 +27,9 @@ const env = () => ({
   SHIPPING_LEVEL: 'MAIL',
   PRODUCTION_DELAY: '120',
   FALLBACK_PHONE: '555-000-0000',
+  BREVO_API_KEY: 'brevo-test-key',
+  EMAIL_FROM: 'slaton@fortheboards.com',
+  EMAIL_FROM_NAME: 'For The Boards',
   FULFILLMENT: makeKV(),
 });
 
@@ -169,4 +172,118 @@ assert.strictEqual(res.status, 500);
 assert.match(await res.text(), /Set LULU_PRINTABLE_ID/);
 console.log('✓ missing file config gives an actionable error');
 
-console.log('\nAll 9 checks passed.');
+// ---------------------------------------------------------------------------
+// Lulu shipping notifications (POST /lulu)
+// ---------------------------------------------------------------------------
+
+const shipped = {
+  topic: 'PRINT_JOB_STATUS_CHANGED',
+  data: {
+    id: 998877,
+    external_id: 'cs_test_abc123',
+    status: {
+      name: 'SHIPPED',
+      line_item_statuses: [
+        {
+          name: 'SHIPPED',
+          line_item_id: 1,
+          messages: {
+            tracking_id: 'TRK123',
+            tracking_urls: ['https://track.example/TRK123'],
+            carrier_name: 'UPS',
+          },
+        },
+      ],
+    },
+    shipping_address: { name: 'Jane Resident', email: 'buyer@example.com' },
+  },
+};
+
+async function luluHmac(body, secret, encoding = 'hex') {
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body)));
+  return encoding === 'hex'
+    ? [...mac].map((b) => b.toString(16).padStart(2, '0')).join('')
+    : Buffer.from(mac).toString('base64');
+}
+
+const luluReq = async (body, sig) =>
+  new Request('https://w.dev/lulu', { method: 'POST', body, headers: { 'lulu-hmac-sha256': sig } });
+
+let brevoBody = null;
+let brevoStatus = 201;
+const mockBrevo = async (url, init) => {
+  url = String(url);
+  if (url.includes('api.brevo.com')) {
+    brevoBody = JSON.parse(init.body);
+    return brevoStatus === 201
+      ? Response.json({ messageId: 'msg-1' }, { status: 201 })
+      : new Response('brevo down', { status: brevoStatus });
+  }
+  throw new Error(`unexpected fetch: ${url}`);
+};
+
+// 10. Shipped job emails the buyer with their tracking link
+globalThis.fetch = mockBrevo;
+const shippedRaw = JSON.stringify(shipped);
+const e10 = env();
+res = await worker.fetch(await luluReq(shippedRaw, await luluHmac(shippedRaw, 'cs')), e10);
+assert.strictEqual(res.status, 200, 'shipped notification should succeed');
+assert.strictEqual(brevoBody.to[0].email, 'buyer@example.com');
+assert.match(brevoBody.htmlContent, /https:\/\/track\.example\/TRK123/);
+assert.match(brevoBody.textContent, /https:\/\/track\.example\/TRK123/);
+assert.match(brevoBody.subject, /shipped/i);
+assert.strictEqual(brevoBody.sender.email, 'slaton@fortheboards.com');
+console.log('✓ shipped job emails the buyer their tracking link');
+
+// 11. Lulu redelivery does not email twice
+brevoBody = null;
+res = await worker.fetch(await luluReq(shippedRaw, await luluHmac(shippedRaw, 'cs')), e10);
+assert.strictEqual(res.status, 200);
+assert.strictEqual(brevoBody, null, 'redelivery must not send a second email');
+console.log('✓ duplicate shipping webhook does not email twice');
+
+// 12. Base64 digest accepted (Lulu does not document the encoding)
+brevoBody = null;
+res = await worker.fetch(await luluReq(shippedRaw, await luluHmac(shippedRaw, 'cs', 'base64')), env());
+assert.strictEqual(res.status, 200);
+assert.ok(brevoBody, 'base64-encoded HMAC should verify');
+console.log('✓ accepts both hex and base64 HMAC encodings');
+
+// 13. Forged Lulu signature rejected
+res = await worker.fetch(await luluReq(shippedRaw, 'not-a-real-hmac'), env());
+assert.strictEqual(res.status, 400);
+console.log('✓ forged Lulu signature rejected with 400');
+
+// 14. Non-shipped status ignored
+const created = JSON.stringify({
+  topic: 'PRINT_JOB_STATUS_CHANGED',
+  data: { ...shipped.data, status: { name: 'IN_PRODUCTION' } },
+});
+brevoBody = null;
+res = await worker.fetch(await luluReq(created, await luluHmac(created, 'cs')), env());
+assert.strictEqual(res.status, 200);
+assert.strictEqual(brevoBody, null, 'only SHIPPED should notify');
+console.log('✓ non-shipped status changes ignored');
+
+// 15. No buyer email returns 200, not 500 — Lulu deactivates a webhook after
+//     5 consecutive failures, and this can never succeed on retry.
+const noEmail = JSON.stringify({
+  topic: 'PRINT_JOB_STATUS_CHANGED',
+  data: { ...shipped.data, id: 998878, shipping_address: { name: 'Jane Resident' } },
+});
+res = await worker.fetch(await luluReq(noEmail, await luluHmac(noEmail, 'cs')), env());
+assert.strictEqual(res.status, 200, 'unsendable notification must not burn Lulu retries');
+console.log('✓ missing buyer email does not risk webhook deactivation');
+
+// 16. Brevo outage returns 500 so Lulu retries, and does not mark as notified
+brevoStatus = 503;
+const e16 = env();
+res = await worker.fetch(await luluReq(shippedRaw, await luluHmac(shippedRaw, 'cs')), e16);
+assert.strictEqual(res.status, 500, 'Brevo outage should ask Lulu to retry');
+assert.strictEqual(e16.FULFILLMENT.store.size, 0, 'must not record a notification that never sent');
+brevoStatus = 201;
+console.log('✓ Brevo outage retries instead of silently dropping the email');
+
+console.log('\nAll 16 checks passed.');

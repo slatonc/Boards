@@ -1,19 +1,28 @@
 /**
- * Stripe -> Lulu Print API fulfillment webhook.
+ * Order fulfillment and shipping notifications for For The Boards.
  *
- * When a Stripe Checkout session is paid, this creates a matching Lulu print
- * job so the book is printed and drop-shipped to the buyer automatically.
+ * Two inbound webhooks:
+ *   POST /      Stripe. A paid checkout creates a Lulu print job, so the book
+ *               is printed and drop-shipped automatically.
+ *   POST /lulu  Lulu. A shipped print job emails the buyer their tracking link.
  *
- * Replaces what the Lulu Direct Shopify app used to do.
+ * Together these replace what the Lulu Direct Shopify app used to do.
  */
 
 const STRIPE_API = 'https://api.stripe.com/v1';
+const BREVO_API = 'https://api.brevo.com/v3/smtp/email';
 const SIGNATURE_TOLERANCE_SECONDS = 300;
 
 export default {
   async fetch(request, env) {
     if (request.method !== 'POST') {
       return new Response('Method not allowed', { status: 405 });
+    }
+
+    // Stripe's endpoint was configured at the root before the Lulu one existed;
+    // keep it there so the existing dashboard config stays valid.
+    if (new URL(request.url).pathname.replace(/\/$/, '') === '/lulu') {
+      return handleLulu(request, env);
     }
 
     const raw = await request.text();
@@ -59,6 +68,145 @@ export default {
     }
   },
 };
+
+/**
+ * Lulu fires on every print-job status change. Only SHIPPED matters — that's
+ * the point there is tracking worth sending the buyer.
+ */
+async function handleLulu(request, env) {
+  const raw = await request.text();
+
+  try {
+    await verifyLuluSignature(raw, request.headers.get('lulu-hmac-sha256'), env.LULU_CLIENT_SECRET);
+  } catch (err) {
+    return new Response(`Signature verification failed: ${err.message}`, { status: 400 });
+  }
+
+  const { topic, data } = JSON.parse(raw);
+  if (topic !== 'PRINT_JOB_STATUS_CHANGED') {
+    return new Response('Ignored', { status: 200 });
+  }
+  if (data?.status?.name !== 'SHIPPED') {
+    return new Response('Not shipped, ignored', { status: 200 });
+  }
+
+  const key = `shipped:${data.id}`;
+  if (await env.FULFILLMENT.get(key)) {
+    return new Response('Already notified', { status: 200 });
+  }
+
+  const recipient = data.shipping_address?.email;
+  if (!recipient) {
+    // A missing buyer email will not appear on a later delivery, and Lulu
+    // deactivates a webhook after 5 consecutive failures — so don't burn
+    // retries on something that can never succeed.
+    console.error(`Print job ${data.id} shipped with no buyer email; cannot notify.`);
+    return new Response('No recipient', { status: 200 });
+  }
+
+  try {
+    await sendShippingEmail(env, {
+      recipient,
+      name: data.shipping_address?.name,
+      tracking: extractTracking(data),
+    });
+  } catch (err) {
+    console.error(`Brevo send failed for print job ${data.id}: ${err.message}`);
+    return new Response(`Email failed: ${err.message}`, { status: 500 });
+  }
+
+  await env.FULFILLMENT.put(key, JSON.stringify({ notified: recipient, at: new Date().toISOString() }));
+  return Response.json({ ok: true, notified: recipient });
+}
+
+/**
+ * Tracking shows up under the job status and, depending on the payload, under
+ * each line item. Check both rather than depending on one shape.
+ */
+function extractTracking(job) {
+  const sources = [
+    ...(job.status?.line_item_statuses ?? []).map((s) => s.messages),
+    ...(job.line_items ?? []).map((item) => item.status?.messages),
+  ].filter(Boolean);
+
+  for (const source of sources) {
+    if (!source.tracking_id && !source.tracking_urls) continue;
+    const urls = Array.isArray(source.tracking_urls)
+      ? source.tracking_urls
+      : source.tracking_urls
+        ? [source.tracking_urls]
+        : [];
+    return { id: source.tracking_id || null, urls, carrier: source.carrier_name || null };
+  }
+
+  return { id: null, urls: [], carrier: null };
+}
+
+async function sendShippingEmail(env, { recipient, name, tracking }) {
+  const firstName = String(name || '').trim().split(/\s+/)[0] || 'there';
+  const link = tracking.urls[0] || null;
+  const carrier = tracking.carrier || 'the carrier';
+
+  const trackingHtml = link
+    ? `<p style="margin:0 0 20px"><a href="${escapeHtml(link)}" style="background:#c8102e;color:#fff;padding:12px 22px;border-radius:4px;text-decoration:none;display:inline-block">Track your package</a></p>`
+    : tracking.id
+      ? `<p style="margin:0 0 20px">Tracking number: <strong>${escapeHtml(tracking.id)}</strong> (${escapeHtml(carrier)})</p>`
+      : '';
+
+  const trackingText = link
+    ? `Track it here: ${link}`
+    : tracking.id
+      ? `Tracking number: ${tracking.id} (${carrier})`
+      : '';
+
+  const body = {
+    sender: { email: env.EMAIL_FROM, name: env.EMAIL_FROM_NAME },
+    to: [{ email: recipient, name: name || undefined }],
+    subject: 'Your copy of For The Boards has shipped',
+    htmlContent: `<!doctype html><html><body style="margin:0;padding:24px;background:#f4f5f7;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#1a1a1a">
+<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:8px;padding:32px">
+<h1 style="margin:0 0 16px;font-size:22px">Your book is on its way</h1>
+<p style="margin:0 0 16px;line-height:1.55">Hi ${escapeHtml(firstName)}, your copy of <strong>For The Boards</strong> has shipped.</p>
+${trackingHtml}
+<p style="margin:0 0 16px;line-height:1.55">Delivery usually takes about a week from here, though it can vary by location.</p>
+<p style="margin:0 0 16px;line-height:1.55">Questions, or something wrong with your order? Just reply to this email.</p>
+<p style="margin:24px 0 0;line-height:1.55">Good luck with your studying,<br>Slaton</p>
+</div></body></html>`,
+    textContent: `Hi ${firstName}, your copy of For The Boards has shipped.
+
+${trackingText}
+
+Delivery usually takes about a week from here, though it can vary by location.
+
+Questions, or something wrong with your order? Just reply to this email.
+
+Good luck with your studying,
+Slaton`,
+    tags: ['shipping-notification'],
+  };
+
+  let lastError = 'unknown error';
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise((r) => setTimeout(r, 400 * attempt));
+
+    const res = await fetch(BREVO_API, {
+      method: 'POST',
+      headers: { 'api-key': env.BREVO_API_KEY, 'Content-Type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) return;
+    lastError = `${res.status}: ${await res.text()}`;
+
+    // A rejected key or malformed payload will not fix itself on retry.
+    if (res.status >= 400 && res.status < 500 && res.status !== 429) break;
+  }
+
+  throw new Error(lastError);
+}
+
+const escapeHtml = (value) =>
+  String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 async function fulfill(env, session) {
   const quantity = await getQuantity(env, session.id);
@@ -244,6 +392,32 @@ async function verifyStripeSignature(payload, header, secret) {
     throw new Error('timestamp outside tolerance');
   }
 
+  const expected = await hmacSha256(secret, `${timestamp}.${payload}`);
+
+  if (!signatures.some((candidate) => timingSafeEqual(candidate, expected.hex))) {
+    throw new Error('no matching v1 signature');
+  }
+
+  return JSON.parse(payload);
+}
+
+/**
+ * Lulu signs the raw request body with the account's API secret and sends it in
+ * Lulu-HMAC-SHA256. The docs don't pin the digest encoding, so accept either
+ * hex or base64 rather than guessing wrong and rejecting every delivery.
+ */
+async function verifyLuluSignature(payload, header, secret) {
+  if (!header) throw new Error('missing Lulu-HMAC-SHA256 header');
+
+  const expected = await hmacSha256(secret, payload);
+  const candidate = header.trim();
+
+  if (!timingSafeEqual(candidate, expected.hex) && !timingSafeEqual(candidate, expected.base64)) {
+    throw new Error('signature mismatch');
+  }
+}
+
+async function hmacSha256(secret, message) {
   const key = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(secret),
@@ -251,14 +425,12 @@ async function verifyStripeSignature(payload, header, secret) {
     false,
     ['sign']
   );
-  const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${timestamp}.${payload}`));
-  const expected = [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message)));
 
-  if (!signatures.some((candidate) => timingSafeEqual(candidate, expected))) {
-    throw new Error('no matching v1 signature');
-  }
-
-  return JSON.parse(payload);
+  return {
+    hex: [...mac].map((b) => b.toString(16).padStart(2, '0')).join(''),
+    base64: btoa(String.fromCharCode(...mac)),
+  };
 }
 
 function timingSafeEqual(a, b) {

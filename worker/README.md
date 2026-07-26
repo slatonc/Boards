@@ -1,12 +1,21 @@
-# Stripe → Lulu fulfillment webhook
+# Fulfillment + shipping notifications
 
 Replaces the Lulu Direct Shopify app. When someone pays through the Stripe
 Payment Link on the site, this Worker creates a Lulu print job so the book is
-printed and drop-shipped to them automatically.
+printed and drop-shipped to them automatically. When Lulu ships it, the buyer
+gets an email with tracking.
 
 ```
-Buyer → Stripe Payment Link → checkout.session.completed → Worker → Lulu print job
+Buyer → Stripe Payment Link → checkout.session.completed → POST /     → Lulu print job
+Lulu ships → PRINT_JOB_STATUS_CHANGED                    → POST /lulu → Brevo email
 ```
+
+Two routes on one Worker:
+
+| Route | Caller | Verified with |
+|---|---|---|
+| `POST /` | Stripe | `Stripe-Signature`, HMAC of `timestamp.body` |
+| `POST /lulu` | Lulu | `Lulu-HMAC-SHA256`, HMAC of the raw body with your Lulu API secret |
 
 ## Setup
 
@@ -102,6 +111,45 @@ cd worker && npx wrangler deploy
 In the Stripe dashboard → Developers → Webhooks, add an endpoint at the
 deployed Worker URL, subscribed to **`checkout.session.completed`** only. Copy
 the signing secret into `STRIPE_WEBHOOK_SECRET` and redeploy.
+
+## Shipping notification emails
+
+Sent through Brevo when Lulu reports a job `SHIPPED`. Setup:
+
+1. Create a Brevo account and an API key (SMTP & API → API keys)
+2. **Verify `slaton@fortheboards.com` as a sender** in Brevo, or every send is
+   rejected. Domain authentication (SPF/DKIM DNS records on fortheboards.com)
+   is worth doing too — without it these land in spam far more often
+3. Set the key:
+
+```bash
+npx wrangler secret put BREVO_API_KEY --env production
+```
+
+4. Register the Lulu webhook and fire a test delivery at it:
+
+```bash
+LULU_CLIENT_KEY=... LULU_CLIENT_SECRET=... node register-webhook.mjs --live --test
+```
+
+`--list` shows what's registered. `--url` overrides the endpoint.
+
+### Things worth knowing
+
+**Lulu deactivates a webhook after 5 consecutive failed deliveries.** The
+handler is built around this: anything unrecoverable (no buyer email, a status
+we don't care about) returns 200 so it doesn't burn retries. Only a genuinely
+retryable failure — Brevo being down, after three in-request attempts — returns
+500. Re-running `register-webhook.mjs` reactivates a deactivated hook.
+
+**The buyer's email reaches Lulu via `shipping_address.email`**, which the
+Stripe handler sets from the checkout session. A job created any other way
+(manually, Order Import) won't have it, and the notification is skipped with a
+log line rather than an error.
+
+**Only `SHIPPED` sends mail.** No "order received" email is sent — Stripe's own
+receipt covers that, if you've enabled it in Stripe → Settings → Customer
+emails.
 
 ## Testing
 
