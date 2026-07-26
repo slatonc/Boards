@@ -47,6 +47,10 @@ FALLBACK_PHONE = "773-543-0603"
 EMAIL_FROM = "slaton@fortheboards.com"
 EMAIL_FROM_NAME = "For The Boards"
 
+# Blind-copied on every shipping email, so you see exactly what buyers get.
+# Remove this line to stop the copies.
+EMAIL_BCC = "slaton@fortheboards.com"
+
 [env.production]
 name = "fortheboards-fulfillment-prod"
 # The stable workers.dev URL is what Stripe posts to. Per-version preview URLs
@@ -70,6 +74,10 @@ PRODUCTION_DELAY = "120"
 FALLBACK_PHONE = "773-543-0603"
 EMAIL_FROM = "slaton@fortheboards.com"
 EMAIL_FROM_NAME = "For The Boards"
+
+# Blind-copied on every shipping email, so you see exactly what buyers get.
+# Remove this line to stop the copies.
+EMAIL_BCC = "slaton@fortheboards.com"
 
 [[env.production.kv_namespaces]]
 binding = "FULFILLMENT"

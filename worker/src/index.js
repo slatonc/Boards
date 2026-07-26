@@ -162,6 +162,8 @@ async function sendShippingEmail(env, { recipient, name, tracking }) {
   const body = {
     sender: { email: env.EMAIL_FROM, name: env.EMAIL_FROM_NAME },
     to: [{ email: recipient, name: name || undefined }],
+    // Blind copy, so the buyer never sees an extra address on their email.
+    ...(env.EMAIL_BCC ? { bcc: [{ email: env.EMAIL_BCC }] } : {}),
     subject: 'Your copy of For The Boards has shipped',
     htmlContent: `<!doctype html><html><body style="margin:0;padding:24px;background:#f4f5f7;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#1a1a1a">
 <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:8px;padding:32px">

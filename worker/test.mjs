@@ -30,6 +30,7 @@ const env = () => ({
   BREVO_API_KEY: 'brevo-test-key',
   EMAIL_FROM: 'slaton@fortheboards.com',
   EMAIL_FROM_NAME: 'For The Boards',
+  EMAIL_BCC: 'slaton@fortheboards.com',
   FULFILLMENT: makeKV(),
 });
 
@@ -237,6 +238,22 @@ assert.match(brevoBody.subject, /shipped/i);
 assert.strictEqual(brevoBody.sender.email, 'slaton@fortheboards.com');
 console.log('✓ shipped job emails the buyer their tracking link');
 
+// 10b. Seller is blind-copied, and the buyer cannot see it
+assert.deepStrictEqual(brevoBody.bcc, [{ email: 'slaton@fortheboards.com' }]);
+assert.ok(!brevoBody.cc, 'must be BCC, not CC — the buyer should not see it');
+assert.strictEqual(brevoBody.to.length, 1, 'buyer should be the only visible recipient');
+console.log('✓ seller is blind-copied on every shipping email');
+
+// 10c. BCC is optional — unset means no copy, not a broken payload
+brevoBody = null;
+const eNoBcc = env();
+delete eNoBcc.EMAIL_BCC;
+const noBccRaw = JSON.stringify({ ...shipped, data: { ...shipped.data, id: 998879 } });
+res = await worker.fetch(await luluReq(noBccRaw, await luluHmac(noBccRaw, 'cs')), eNoBcc);
+assert.strictEqual(res.status, 200);
+assert.ok(!('bcc' in brevoBody), 'no BCC key when EMAIL_BCC is unset');
+console.log('✓ blind copy can be turned off cleanly');
+
 // 11. Lulu redelivery does not email twice
 brevoBody = null;
 res = await worker.fetch(await luluReq(shippedRaw, await luluHmac(shippedRaw, 'cs')), e10);
@@ -286,4 +303,4 @@ assert.strictEqual(e16.FULFILLMENT.store.size, 0, 'must not record a notificatio
 brevoStatus = 201;
 console.log('✓ Brevo outage retries instead of silently dropping the email');
 
-console.log('\nAll 16 checks passed.');
+console.log('\nAll 18 checks passed.');
