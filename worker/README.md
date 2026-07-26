@@ -190,6 +190,26 @@ cd worker && npx wrangler kv key delete --binding FULFILLMENT "session:cs_live_.
 window. Cancel from the Lulu dashboard before the job leaves
 `PRODUCTION_DELAY` status and you're not charged for the print.
 
+## Rotating the Stripe secret key
+
+The dashboard's copy button on an existing secret key can hand you the key
+object's **internal id** (`mk_…`) rather than the secret itself — Stripe only
+shows a secret key in full at creation. Setting that produces:
+
+```
+Stripe line_items returned 401: Invalid API Key provided: mk_…
+```
+
+Create a new key instead (API keys → Create secret key), copy it from the
+one-time reveal, and check it before deploying:
+
+```bash
+curl -s -u "sk_live_KEY:" "https://api.stripe.com/v1/checkout/sessions/SESSION_ID/line_items"
+```
+
+Orders are not lost while this is broken — the Worker 500s, and Stripe retries
+for ~3 days. Fix the key and hit Resend on the event.
+
 ## Things that will bite you later
 
 - **International shipping.** The Payment Link says "U.S. shipping is included"
