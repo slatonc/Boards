@@ -84,11 +84,6 @@ section {
     margin: 0 0 6px;
 }
 
-.intro-video .video-text p {
-    margin: 0 0 8px;
-    color: var(--neutral-700);
-}
-
 .intro-video .video-player {
     display: flex;
     justify-content: center;
@@ -1080,19 +1075,6 @@ nav {
         grid-template-columns: 1fr;
         gap: 12px;
     }
-}
-
-.footer-contact-trigger {
-    font-weight: 600;
-    color: var(--accent-300);
-    cursor: pointer;
-    text-decoration: none;
-}
-
-.footer-contact-trigger:hover,
-.footer-contact-trigger:focus {
-    color: #fff;
-    text-decoration: underline;
 }
 
 /* Why Choose Section */

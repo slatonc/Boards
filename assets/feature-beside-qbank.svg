@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-hidden="true">
+  <!-- Qbank on screen -->
+  <rect x="4" y="30" width="46" height="36" rx="6" fill="#ffffff" stroke="#0c223f" stroke-width="3.5"/>
+  <g stroke="#4499e8" stroke-width="3.5" stroke-linecap="round">
+    <path d="M13 42h18"/>
+    <path d="M13 52h26"/>
+  </g>
+  <g stroke="#0c223f" stroke-width="3.5" stroke-linecap="round" fill="none">
+    <path d="M27 66v8"/>
+    <path d="M17 74h20"/>
+  </g>
+  <!-- The lesson moves to paper -->
+  <g stroke="#d45a1a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M56 52h11"/>
+    <path d="M62 46l6 6-6 6"/>
+  </g>
+  <!-- The book it lands in -->
+  <path d="M80 30h32a4 4 0 0 1 4 4v50a4 4 0 0 1-4 4H80a5 5 0 0 1-5-5V35a5 5 0 0 1 5-5z" fill="#ffffff" stroke="#0c223f" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M84 30v58" fill="none" stroke="#0c223f" stroke-width="3"/>
+  <g stroke="#5ecf8a" stroke-width="3.5" stroke-linecap="round">
+    <path d="M92 46h17"/>
+    <path d="M92 59h11"/>
+    <path d="M92 72h14"/>
+  </g>
+</svg>
