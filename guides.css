@@ -1,10 +1,5 @@
 /* Reading pages extend the existing navy-and-blue storefront. */
 .guide-page { background: #fff; }
-.guide-page .guide-header { position: static; padding: 22px max(5vw, 20px); border-bottom: 1px solid var(--neutral-300); gap: 24px; flex-wrap: wrap; }
-.guide-header nav { flex: 0 1 auto; margin-left: auto; }
-.guide-header .menu { gap: 22px; }
-.guide-header .menu a { font-size: .95rem; color: var(--primary-900); text-decoration: none; }
-.guide-header .menu a:hover { text-decoration: underline; }
 .guide-content { max-width: 760px; margin: 0 auto; padding: 52px 24px 72px; }
 .guide-content.wide { max-width: 1060px; }
 .guide-content h1 { font-size: clamp(2.2rem, 5vw, 3.35rem); color: var(--primary-900); margin: 16px 0 22px; }
@@ -32,16 +27,10 @@
 .guide-content details { border-top: 1px solid var(--neutral-300); padding: 18px 0; }
 .guide-content summary { cursor: pointer; font-weight: 600; font-size: 1.075rem; }
 .guide-content details p { margin-top: 12px; }
-.guide-footer { border-top: 1px solid var(--neutral-300); padding: 28px 24px; background: var(--neutral-100); color: var(--neutral-700); text-align: center; }
-.guide-footer a { color: var(--primary-900); margin: 0 9px; display: inline-block; padding: 6px 0; }
-.guide-footer p { margin: 10px auto; max-width: 800px; font-size: .875rem; }
 .skip-link { position: absolute; top: -100px; left: 12px; padding: 12px; background: #fff; z-index: 1000; }
 .skip-link:focus { top: 12px; }
 :focus-visible { outline: 3px solid #1a47c8; outline-offset: 4px; }
 @media (max-width: 620px) {
   .guide-list { grid-template-columns: 1fr; gap: 16px; }
-  .guide-page .guide-header { padding: 18px 20px; gap: 16px; }
-  .guide-header nav { margin: 0; width: 100%; }
-  .guide-header .menu { justify-content: flex-start; gap: 18px; }
   .guide-content { padding: 32px 20px 48px; }
 }
