@@ -1,4 +1,5 @@
-import { cp, mkdir, readdir, rm } from 'node:fs/promises';
+import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 
 // Publish an explicit storefront allowlist. Never copy the repository root:
 // it also contains fulfillment code, credentials, recordings and private output.
@@ -12,7 +13,23 @@ for (const file of files) await cp(new URL(file, import.meta.url), new URL(file,
 await mkdir(new URL('assets/', output));
 for (const file of assets) await cp(new URL('assets/' + file, import.meta.url), new URL('assets/' + file, output));
 await mkdir(new URL('study-guides/', output));
+const htmlFiles = [...pages];
 for (const file of await readdir(new URL('./study-guides/', import.meta.url))) {
-  if (file.endsWith('.html')) await cp(new URL('study-guides/' + file, import.meta.url), new URL('study-guides/' + file, output));
+  if (file.endsWith('.html')) {
+    await cp(new URL('study-guides/' + file, import.meta.url), new URL('study-guides/' + file, output));
+    htmlFiles.push('study-guides/' + file);
+  }
+}
+// New page markup must load its matching styles, even when the browser has
+// cached a previous deployment's CSS for several hours.
+for (const stylesheet of ['style.css', 'guides.css']) {
+  const hash = createHash('sha256').update(await readFile(new URL(stylesheet, output))).digest('hex').slice(0, 12);
+  for (const file of htmlFiles) {
+    const path = new URL(file, output);
+    const html = await readFile(path, 'utf8');
+    const updated = html.replaceAll(`href="${stylesheet}"`, `href="${stylesheet}?v=${hash}"`)
+      .replaceAll(`href="/${stylesheet}"`, `href="/${stylesheet}?v=${hash}"`);
+    if (updated !== html) await writeFile(path, updated);
+  }
 }
 console.log('Built public storefront in dist/');
