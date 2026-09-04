@@ -2,24 +2,33 @@ name = "fortheboards-fulfillment"
 main = "src/index.js"
 compatibility_date = "2026-07-01"
 
-# Idempotency store — keeps a Stripe webhook retry from printing a second book.
+# Retained for migration of old fulfillment and shipping-notification records.
 # Sandbox/dev uses its own namespace so test orders never collide with real ones.
 [[kv_namespaces]]
 binding = "FULFILLMENT"
 id = "2e079500ea2e4431bcbe303214ecda67"
 preview_id = "8ab0b23b01de448091554cd8ac2db6b2"
 
+[[durable_objects.bindings]]
+name = "ORDERS"
+class_name = "OrderFulfillment"
+
+[[migrations]]
+tag = "v1-order-fulfillment"
+new_sqlite_classes = ["OrderFulfillment"]
+
 # Non-secret config. Secrets are set separately — see README.
 [vars]
 LULU_API_BASE = "https://api.sandbox.lulu.com"
 BOOK_TITLE = "For The Boards"
 LULU_CONTACT_EMAIL = "slaton@fortheboards.com"
+ALLOWED_PAYMENT_LINK_URL = "REPLACE_WITH_SANDBOX_PAYMENT_LINK_URL"
 
 # The Lulu SKU encoding trim size, color, binding, and paper. Decoded from the
 # ForTheBoards project: US Letter 8.5x11, color, perfect bound paperback,
-# 60# uncoated white, matte cover. 202 pages, $13.51 print cost.
+# 60# uncoated white, matte cover. 246 pages.
 # Verify with: node find-sku.mjs --trim 8.5x11 --color FC --bind PB \
-#   --paper 060UW444 --finish MXX --pages 202
+#   --paper 060UW444 --finish MXX --pages 246 --live
 POD_PACKAGE_ID = "0850X1100FCSTDPB060UW444MXX"
 
 # Sandbox is a separate Lulu account with its own credentials and its own
@@ -54,16 +63,23 @@ name = "fortheboards-fulfillment-prod"
 workers_dev = true
 preview_urls = false
 
+[[env.production.durable_objects.bindings]]
+name = "ORDERS"
+class_name = "OrderFulfillment"
+
 [env.production.vars]
 LULU_API_BASE = "https://api.lulu.com"
 BOOK_TITLE = "For The Boards"
 LULU_CONTACT_EMAIL = "slaton@fortheboards.com"
+ALLOWED_PAYMENT_LINK_URL = "https://buy.stripe.com/4gM5kFc7m2CO8dz76cbAs00"
+ALERT_EMAIL = "slaton@fortheboards.com"
 POD_PACKAGE_ID = "0850X1100FCSTDPB060UW444MXX"
 
-# Lulu holds the normalized 2026.08 edition files under this id, so no PDF URLs
-# are needed and nothing has to stay hosted. Minted with mint-printable.mjs.
-# For a new edition: mint a fresh id and replace this.
-LULU_PRINTABLE_ID = "94e2cf95-1f59-4bb3-987c-0f56773a79c1"
+# Lulu holds the normalized 246-page files under this id, so no PDF URLs
+# are needed and nothing has to stay hosted. Minted with mint-printable.mjs
+# from 2mr7zqm_13_print_{interior,cover}.pdf. For a new edition: mint a
+# fresh id and replace this.
+LULU_PRINTABLE_ID = "7c55e2a9-383e-4e00-b3da-1cfecfdcfe70"
 
 SHIPPING_LEVEL = "MAIL"
 PRODUCTION_DELAY = "120"

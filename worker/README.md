@@ -1,223 +1,56 @@
-# Fulfillment + shipping notifications
+# For The Boards fulfillment
 
-Replaces the Lulu Direct Shopify app. When someone pays through the Stripe
-Payment Link on the site, this Worker creates a Lulu print job so the book is
-printed and drop-shipped to them automatically. When Lulu ships it, the buyer
-gets an email with tracking.
+Stripe Payment Link → signed Stripe webhook → one Durable Object per Checkout session → Lulu print job. Lulu status notifications and a six-hour status check deliver shipping emails and seller alerts through Brevo.
 
-```
-Buyer → Stripe Payment Link → checkout.session.completed → POST /     → Lulu print job
-Lulu ships → PRINT_JOB_STATUS_CHANGED                    → POST /lulu → Brevo email
-```
+## Production configuration
 
-Two routes on one Worker:
+The production Worker is `fortheboards-fulfillment-prod`, with two public routes:
 
-| Route | Caller | Verified with |
-|---|---|---|
-| `POST /` | Stripe | `Stripe-Signature`, HMAC of `timestamp.body` |
-| `POST /lulu` | Lulu | `Lulu-HMAC-SHA256`, HMAC of the raw body with your Lulu API secret |
+- `POST /`: signed `checkout.session.completed` and `checkout.session.async_payment_succeeded` notifications. Only paid sessions from `ALLOWED_PAYMENT_LINK_URL` may print.
+- `POST /lulu`: signed `PRINT_JOB_STATUS_CHANGED` notifications. The service retrieves the job from Lulu before trusting its current status and recipient.
 
-## Setup
+Secrets are managed with Wrangler: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `LULU_CLIENT_KEY`, `LULU_CLIENT_SECRET`, and `BREVO_API_KEY`. The Stripe key must be allowed to retrieve Payment Links and Checkout line items. `ALERT_EMAIL` receives operational alerts; `EMAIL_BCC` controls the existing copy of buyer shipping mail. Both are currently the seller's address.
 
-Steps 1–3 you do yourself (they involve credentials and account settings).
+The storefront remains hosted separately on Cloudflare Pages. `node build-site.mjs` builds only intended public files into `dist/`; the Worker, local credentials, recorder, and private output must never be part of that deployment.
 
-### 1. Lulu API access — and a card on file
+## Duplicate protection and recovery
 
-Create API credentials at <https://developers.lulu.com/>. You'll get a client
-key and client secret for both sandbox and production.
+`ORDERS` binds the `OrderFulfillment` Durable Object class. Each Stripe session gets one object with a persistent order phase. Concurrent requests receive a retry response while the first request is active. Only a confirmed Lulu job ID is acknowledged as submitted.
 
-**Then put a credit card on file in the Lulu developer portal.** Without one,
-every print job this Worker creates sits in `UNPAID` status forever and nothing
-ever prints. This is the single most common way this setup silently fails.
+The old `FULFILLMENT` KV namespace is retained for migration. Completed legacy orders and shipping notifications are honored. Legacy processing claims are treated as uncertain, not completed. Do not delete old KV records to force a reprint.
 
-### 2. Get your `pod_package_id`
+Before a new create request, the service searches Lulu and matches the exact external reference. Immediately before creating a job, it durably records the `creating` phase. If Lulu accepts a job but the response or final storage write is lost, the next notification or alarm reconciles it against Lulu without creating another book.
 
-The Print API has no concept of your Lulu projects — it identifies a book by a
-SKU built from its physical specs:
+An ambiguous create with no visible Lulu match is held for seller review. This intentionally favors avoiding duplicate printing over blindly retrying an uncertain external side effect. After notifying the seller and one scheduled reconciliation, automatic polling of an unconfirmed submission stops. Stripe may still retry its original event, and each retry checks again for a matching job.
 
-```
-TRIM . COLOR . QUALITY . BIND . PAPER . FINISH
-0600X0900 FC STD PB 060UW444 GXX
-```
+To resolve an alert, inspect both Stripe and Lulu using the payment reference. If a job exists, resend the Stripe event to let the service find it. If multiple jobs exist, inspect their state before canceling any unwanted copy. If no job exists and a manual order is necessary, use the same Checkout session ID as Lulu's external reference so reconciliation can find it. Never erase a durable order record simply to retry payment fulfillment. Refunds and deliberate reprints require a human decision.
 
-Read your book's specs off the Lulu project you already sell, then build and
-verify the SKU:
+## Monitoring and email
 
-```bash
-cd worker && LULU_CLIENT_KEY=... LULU_CLIENT_SECRET=... node find-sku.mjs --trim 6x9 --color FC --bind PB --paper 060UW444 --finish GXX --pages 220
+After submission, an alarm checks Lulu every six hours as a fallback when a webhook is delayed or disabled. Seller alerts cover rejected/canceled jobs, unpaid jobs older than six hours, jobs not shipped after 14 days, missing buyer email, uncertain submissions, and duplicate references. Routine polling stops after shipment, rejection/cancellation, or a final escalation after 30 days. Alerts are deduplicated per reason in the order record. An email provider response lost after acceptance can still lead to a repeated email on retry; email delivery is not an exactly-once guarantee.
+
+A `SHIPPED` job triggers the buyer email. Tracking is included when Lulu provides it; `MAIL` shipping does not guarantee tracking for every destination. Missing recipient email alerts the seller instead of silently discarding the issue. Brevo's sender must be verified, and domain authentication should be checked in Brevo. Configured credentials alone do not prove inbox delivery.
+
+Lulu automatic payment must be enabled with an appropriate saved payment method. Creating a print job is not proof that Lulu has been paid, printed it, or shipped it. Lulu also deactivates webhooks after repeated failed deliveries; the status alarm provides a fallback for orders submitted by this service.
+
+## Validation and release
+
+```sh
+cd worker
+npm test
+node test-runtime.mjs
+npx wrangler deploy --env production --dry-run
+npx wrangler deploy --env production
 ```
 
-Run it with `--help` for the full code reference. Lulu's cost endpoint rejects
-invalid SKUs, so a clean run is proof the value is real — and it prints your
-per-book cost and margin against the $60 price, which is worth knowing for a
-200+ page full-color book.
+`npm test` covers signatures, old/new Stripe shipping fields, quantity and country validation, concurrent/repeated notifications, legacy migration, lost responses, storage failure, shipping mail, operational alerts, and monitoring. `test-runtime.mjs` uses Miniflare supplied with Wrangler to exercise real Durable Object and KV bindings. Both mock all external HTTP: neither creates real orders nor sends email.
 
-### 3. The print files — one upload, then never again
+The first deployment creates a SQLite-backed Durable Object namespace with the `v1-order-fulfillment` migration. Preserve that namespace on later releases. Do not roll back to the old KV-only fulfillment algorithm after accepting orders with the new service.
 
-Lulu fetches the interior and cover server-side, so the **first** print job
-needs public, unauthenticated URLs. R2 or any static host works. These must be
-the print-ready files, not the website preview PDFs in `assets/`.
+In Stripe, subscribe the existing endpoint to both `checkout.session.completed` and `checkout.session.async_payment_succeeded`. Keep any other existing subscriptions unless intentionally changing them. Receipt settings and delayed-payment behavior need verification in the Stripe account.
 
-After that first job validates, Lulu keeps the normalized files permanently and
-returns a `printable_id`. Read it off the print job:
+## Sandbox and final acceptance
 
-```bash
-cd worker && npx wrangler tail --env production
-```
+The sandbox is a separate Lulu account with separate credentials and printables. Configure its own `ALLOWED_PAYMENT_LINK_URL` and either `LULU_PRINTABLE_ID` or the two PDF URLs before running a sandbox checkout. Production printables do not substitute for sandbox assets. `ALERT_EMAIL` is not set in the default environment, so sandbox issues only log unless explicitly configured.
 
-Set it in `wrangler.toml`:
-
-```toml
-LULU_PRINTABLE_ID = "11606ab3-9355-46d3-ae90-338db6f5d271"
-```
-
-From then on the Worker sends only that id, the PDF URLs are never fetched
-again, and you can take the hosted files down. This is also faster — Lulu skips
-re-normalizing the files on every order.
-
-When you publish a new edition, clear `LULU_PRINTABLE_ID`, point the URLs at
-the new PDFs, let one order through, then set the new `printable_id`.
-
-### 4. Create the KV namespace
-
-```bash
-cd worker && npx wrangler kv namespace create FULFILLMENT
-```
-
-Paste the returned id into `wrangler.toml` (both the default and
-`[[env.production.kv_namespaces]]` blocks).
-
-### 5. Fill in `wrangler.toml`
-
-Replace every `REPLACE_WITH_*` placeholder.
-
-### 6. Set secrets
-
-```bash
-cd worker && npx wrangler secret put LULU_CLIENT_KEY && npx wrangler secret put LULU_CLIENT_SECRET && npx wrangler secret put STRIPE_SECRET_KEY && npx wrangler secret put STRIPE_WEBHOOK_SECRET
-```
-
-Repeat with `--env production` for the production Worker. Use Lulu's sandbox
-credentials for the default environment and live ones for production.
-
-### 7. Deploy
-
-```bash
-cd worker && npx wrangler deploy
-```
-
-### 8. Point Stripe at it
-
-In the Stripe dashboard → Developers → Webhooks, add an endpoint at the
-deployed Worker URL, subscribed to **`checkout.session.completed`** only. Copy
-the signing secret into `STRIPE_WEBHOOK_SECRET` and redeploy.
-
-## Shipping notification emails
-
-Sent through Brevo when Lulu reports a job `SHIPPED`. Setup:
-
-1. Create a Brevo account and an API key (SMTP & API → API keys)
-2. **Verify `slaton@fortheboards.com` as a sender** in Brevo, or every send is
-   rejected. Domain authentication (SPF/DKIM DNS records on fortheboards.com)
-   is worth doing too — without it these land in spam far more often
-3. Set the key:
-
-```bash
-npx wrangler secret put BREVO_API_KEY --env production
-```
-
-4. Register the Lulu webhook and fire a test delivery at it:
-
-```bash
-LULU_CLIENT_KEY=... LULU_CLIENT_SECRET=... node register-webhook.mjs --live --test
-```
-
-`--list` shows what's registered. `--url` overrides the endpoint.
-
-### Things worth knowing
-
-**Lulu deactivates a webhook after 5 consecutive failed deliveries.** The
-handler is built around this: anything unrecoverable (no buyer email, a status
-we don't care about) returns 200 so it doesn't burn retries. Only a genuinely
-retryable failure — Brevo being down, after three in-request attempts — returns
-500. Re-running `register-webhook.mjs` reactivates a deactivated hook.
-
-**The buyer's email reaches Lulu via `shipping_address.email`**, which the
-Stripe handler sets from the checkout session. A job created any other way
-(manually, Order Import) won't have it, and the notification is skipped with a
-log line rather than an error.
-
-**Only `SHIPPED` sends mail.** No "order received" email is sent — Stripe's own
-receipt covers that, if you've enabled it in Stripe → Settings → Customer
-emails.
-
-## Testing
-
-Test against Lulu's sandbox before touching production:
-
-```bash
-cd worker && npx wrangler tail
-```
-
-Then use Stripe's test mode to complete a checkout. You should see the print
-job id in the logs, and the job appear in your Lulu sandbox dashboard.
-
-Sandbox print jobs are free and never actually print.
-
-## Operating it
-
-**Watch the logs after go-live:**
-
-```bash
-cd worker && npx wrangler tail --env production
-```
-
-**A failed fulfillment is not a lost order.** The Worker returns 500 on
-failure, which makes Stripe retry with backoff for up to ~3 days. Fix the
-underlying problem and the retry goes through. Stripe emails you about
-repeatedly failing endpoints.
-
-**Duplicate protection.** Stripe can deliver the same event more than once. The
-Worker records each session id in KV before calling Lulu, so a retry after a
-successful print won't print a second book. If you ever need to re-run a
-fulfillment deliberately, delete that key:
-
-```bash
-cd worker && npx wrangler kv key delete --binding FULFILLMENT "session:cs_live_..." --env production
-```
-
-**Cancelling a bad order.** `PRODUCTION_DELAY` (default 120 minutes) is your
-window. Cancel from the Lulu dashboard before the job leaves
-`PRODUCTION_DELAY` status and you're not charged for the print.
-
-## Rotating the Stripe secret key
-
-The dashboard's copy button on an existing secret key can hand you the key
-object's **internal id** (`mk_…`) rather than the secret itself — Stripe only
-shows a secret key in full at creation. Setting that produces:
-
-```
-Stripe line_items returned 401: Invalid API Key provided: mk_…
-```
-
-Create a new key instead (API keys → Create secret key), copy it from the
-one-time reveal, and check it before deploying:
-
-```bash
-curl -s -u "sk_live_KEY:" "https://api.stripe.com/v1/checkout/sessions/SESSION_ID/line_items"
-```
-
-Orders are not lost while this is broken — the Worker 500s, and Stripe retries
-for ~3 days. Fix the key and hit Resend on the event.
-
-## Things that will bite you later
-
-- **International shipping.** The Payment Link says "U.S. shipping is included"
-  and charges a flat $60. Lulu bills you actual shipping to wherever the buyer
-  is. If you ever open the Payment Link to non-US addresses without changing
-  pricing, the shipping cost comes straight out of your margin.
-- **Reprints of a new edition.** When you update the book, update
-  `INTERIOR_PDF_URL` / `COVER_PDF_URL` and redeploy. Orders always use whatever
-  the URLs point to at fulfillment time.
-- **Bulk program orders** still go through the quote form, not this Worker. For
-  those, Lulu's Order Import tool does batch fulfillment from a spreadsheet.
+Final live acceptance requires an authorized purchase: verify one Stripe payment maps to one Lulu job, confirm automatic payment/production, then shipment, buyer email, tracking where available, and physical arrival. The automated checks do not certify the quality of the printed book or real inbox delivery.

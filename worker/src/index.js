@@ -15,112 +15,264 @@ const SIGNATURE_TOLERANCE_SECONDS = 300;
 
 export default {
   async fetch(request, env) {
-    if (request.method !== 'POST') {
-      return new Response('Method not allowed', { status: 405 });
-    }
-
-    // Stripe's endpoint was configured at the root before the Lulu one existed;
-    // keep it there so the existing dashboard config stays valid.
-    if (new URL(request.url).pathname.replace(/\/$/, '') === '/lulu') {
-      return handleLulu(request, env);
-    }
-
+    const path = new URL(request.url).pathname.replace(/\/$/, '') || '/';
+    if (!['/', '/lulu'].includes(path)) return new Response('Not found', { status: 404 });
+    if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
+    if (Number(request.headers.get('content-length')) > 262144) return new Response('Too large', { status: 413 });
     const raw = await request.text();
-    const signature = request.headers.get('stripe-signature');
-
+    if (new TextEncoder().encode(raw).length > 262144) return new Response('Too large', { status: 413 });
     let event;
     try {
-      event = await verifyStripeSignature(raw, signature, env.STRIPE_WEBHOOK_SECRET);
-    } catch (err) {
-      // 400 tells Stripe not to retry — a bad signature will never become good.
-      return new Response(`Signature verification failed: ${err.message}`, { status: 400 });
+      if (path === '/lulu') {
+        await verifyLuluSignature(raw, request.headers.get('lulu-hmac-sha256'), env.LULU_CLIENT_SECRET);
+        event = JSON.parse(raw);
+      } else {
+        event = await verifyStripeSignature(raw, request.headers.get('stripe-signature'), env.STRIPE_WEBHOOK_SECRET);
+      }
+    } catch {
+      return new Response('Invalid webhook', { status: 400 });
     }
-
-    if (event.type !== 'checkout.session.completed') {
-      return new Response('Ignored', { status: 200 });
+    if (path === '/lulu') {
+      if (event.topic !== 'PRINT_JOB_STATUS_CHANGED') return new Response('Ignored');
+      const sessionId = event.data?.external_id;
+      // Only this storefront's Stripe-linked jobs belong to this service.
+      if (!/^cs_[a-zA-Z0-9_]+$/.test(sessionId || '')) return new Response('Unrelated print job');
+      return routeOrder(env, sessionId, '/status', event.data);
     }
-
-    const session = event.data.object;
-    if (session.payment_status !== 'paid') {
-      return new Response('Not paid, ignored', { status: 200 });
+    if (!['checkout.session.completed', 'checkout.session.async_payment_succeeded'].includes(event.type)) {
+      return new Response('Ignored');
     }
-
-    // Stripe retries webhooks on non-2xx and can deliver duplicates. Without
-    // this guard a retry prints and ships a second book at our expense.
-    const claimed = await claimSession(env, session.id);
-    if (!claimed) {
-      return new Response('Already processed', { status: 200 });
-    }
-
-    try {
-      const printJob = await fulfill(env, session);
-      await env.FULFILLMENT.put(
-        idempotencyKey(session.id),
-        JSON.stringify({ state: 'done', printJobId: printJob.id, at: new Date().toISOString() })
-      );
-      // Logged on success too, so an order can be traced from `wrangler tail`
-      // without going digging in KV for the job id.
-      console.log(`Fulfilled ${session.id} -> Lulu print job ${printJob.id}`);
-      return Response.json({ ok: true, printJobId: printJob.id });
-    } catch (err) {
-      // Release the claim so Stripe's retry can try again.
-      await env.FULFILLMENT.delete(idempotencyKey(session.id));
-      console.error(`Fulfillment failed for ${session.id}: ${err.stack || err.message}`);
-      // 500 asks Stripe to retry with backoff.
-      return new Response(`Fulfillment failed: ${err.message}`, { status: 500 });
-    }
+    const session = event.data?.object;
+    if (!/^cs_[a-zA-Z0-9_]+$/.test(session?.id || '')) return new Response('Invalid session', { status: 400 });
+    if (session.payment_status !== 'paid') return new Response('Not paid, ignored');
+    return routeOrder(env, session.id, '/checkout', session);
   },
 };
 
+async function routeOrder(env, sessionId, path, body) {
+  if (!env.ORDERS) return new Response('Fulfillment unavailable', { status: 503 });
+  try {
+    const stub = env.ORDERS.get(env.ORDERS.idFromName(sessionId));
+    return await stub.fetch(new Request(`https://order.internal${path}`, {
+      method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' },
+    }));
+  } catch (error) {
+    console.error(`Order service failed for ${sessionId}: ${error.message}`);
+    return new Response('Fulfillment temporarily unavailable', { status: 503 });
+  }
+}
+
+const MONITOR_INTERVAL = 6 * 60 * 60 * 1000;
+
 /**
- * Lulu fires on every print-job status change. Only SHIPPED matters — that's
- * the point there is tracking worth sending the buyer.
+ * One globally unique Durable Object per Stripe session. The in-memory busy
+ * flag serializes network work; persistent phases protect against restarts.
+ * Never issue another create after an uncertain Lulu submission.
  */
-async function handleLulu(request, env) {
-  const raw = await request.text();
-
-  try {
-    await verifyLuluSignature(raw, request.headers.get('lulu-hmac-sha256'), env.LULU_CLIENT_SECRET);
-  } catch (err) {
-    return new Response(`Signature verification failed: ${err.message}`, { status: 400 });
+export class OrderFulfillment {
+  constructor(ctx, env) {
+    this.storage = ctx.storage;
+    this.env = env;
+    this.busy = false;
   }
 
-  const { topic, data } = JSON.parse(raw);
-  if (topic !== 'PRINT_JOB_STATUS_CHANGED') {
-    return new Response('Ignored', { status: 200 });
-  }
-  if (data?.status?.name !== 'SHIPPED') {
-    return new Response('Not shipped, ignored', { status: 200 });
-  }
-
-  const key = `shipped:${data.id}`;
-  if (await env.FULFILLMENT.get(key)) {
-    return new Response('Already notified', { status: 200 });
-  }
-
-  const recipient = data.shipping_address?.email;
-  if (!recipient) {
-    // A missing buyer email will not appear on a later delivery, and Lulu
-    // deactivates a webhook after 5 consecutive failures — so don't burn
-    // retries on something that can never succeed.
-    console.error(`Print job ${data.id} shipped with no buyer email; cannot notify.`);
-    return new Response('No recipient', { status: 200 });
+  async fetch(request) {
+    if (this.busy) return new Response('Order processing; retry', { status: 503 });
+    this.busy = true;
+    try {
+      const body = await request.json();
+      return new URL(request.url).pathname === '/checkout'
+        ? await this.checkout(body)
+        : await this.status(body);
+    } catch (error) {
+      console.error(`Order processing failed: ${error.message}`);
+      return new Response('Order requires retry or review', { status: 503 });
+    } finally {
+      this.busy = false;
+    }
   }
 
-  try {
-    await sendShippingEmail(env, {
-      recipient,
-      name: data.shipping_address?.name,
-      tracking: extractTracking(data),
+  async checkout(session) {
+    let order = await this.storage.get('order');
+    if (order?.printJobId) return Response.json({ ok: true, printJobId: order.printJobId });
+    if (!(await allowedPaymentLink(this.env, session))) return new Response('Unrelated payment link');
+
+    // Import the previous KV record; never forget an already-created job.
+    const legacyRaw = !order && await this.env.FULFILLMENT.get(idempotencyKey(session.id));
+    const legacy = legacyRaw ? JSON.parse(legacyRaw) : null;
+    if (legacy?.state === 'done' && legacy.printJobId) {
+      await this.storage.put('order', { sessionId: session.id, phase: 'submitted', printJobId: legacy.printJobId, createdAt: legacy.at });
+      return Response.json({ ok: true, printJobId: legacy.printJobId });
+    }
+
+    // Also catches historical orders whose legacy record is missing.
+    const matches = await findPrintJobs(this.env, session.id);
+    if (matches.length) {
+      order = { sessionId: session.id, phase: 'submitted', printJobId: matches[0].id, createdAt: order?.createdAt || new Date().toISOString() };
+      await this.storage.put('order', order);
+      await this.storage.setAlarm(Date.now() + MONITOR_INTERVAL);
+      if (matches.length > 1) await this.alert('duplicate-jobs', 'Multiple Lulu jobs reference this payment. Review and cancel any unwanted copies.');
+      return Response.json({ ok: true, printJobId: order.printJobId });
+    }
+    if (order?.phase === 'creating' || legacy?.state === 'processing') {
+      await this.storage.put('order', order || { sessionId: session.id, phase: 'creating', createdAt: legacy.at || new Date().toISOString() });
+      await this.storage.setAlarm(Date.now() + MONITOR_INTERVAL);
+      await this.alert('uncertain-submission', 'A print submission was interrupted. No matching job is visible yet. Check Lulu and Stripe before attempting any reprint; automatic resubmission has been stopped to prevent duplicates.');
+      return new Response('Submission requires review', { status: 503 });
+    }
+
+    // Preparation failures are safe to retry because Lulu has not been called.
+    let prepared;
+    try {
+      prepared = await preparePrintJob(this.env, session);
+    } catch (error) {
+      await this.storage.put('order', { sessionId: session.id, phase: 'preparing', createdAt: new Date().toISOString() });
+      await this.alert('preparation-failed', 'A paid order could not be prepared. Check the shipping details, Stripe access, and print-file configuration. Stripe will retry.');
+      throw error;
+    }
+    order = { sessionId: session.id, phase: 'creating', createdAt: new Date().toISOString() };
+    // Schedule recovery before the write that permits the external side effect.
+    await this.storage.setAlarm(Date.now() + MONITOR_INTERVAL);
+    await this.storage.put('order', order);
+    try {
+      const job = await createPrintJob(this.env, prepared);
+      if (!job.id) throw new Error('Lulu response did not contain a job ID');
+      order = { ...order, phase: 'submitted', printJobId: job.id };
+      await this.storage.put('order', order);
+      console.log(`Submitted ${session.id} -> Lulu ${job.id}`);
+      return Response.json({ ok: true, printJobId: job.id });
+    } catch (error) {
+      // Keep the creating record even if the response or final storage write
+      // fails. A subsequent request reconciles; it must not blindly reprint.
+      await this.alert('uncertain-submission', 'Lulu submission did not complete cleanly. Check whether a job exists before reprinting. Automatic resubmission has been stopped to prevent duplicates.');
+      throw error;
+    }
+  }
+
+  async alert(reason, message) {
+    const key = `alert:${reason}`;
+    if (await this.storage.get(key)) return;
+    const order = await this.storage.get('order');
+    console.error(`Order attention: ${order?.sessionId || 'unknown'}: ${reason}`);
+    if (!this.env.ALERT_EMAIL) return;
+    await sendEmail(this.env, {
+      sender: { email: this.env.EMAIL_FROM, name: this.env.EMAIL_FROM_NAME },
+      to: [{ email: this.env.ALERT_EMAIL }],
+      subject: 'For The Boards order needs attention',
+      textContent: `Payment: ${order?.sessionId || 'unknown'}\nLulu job: ${order?.printJobId || 'not confirmed'}\n\n${message}`,
+      tags: ['fulfillment-alert'],
     });
-  } catch (err) {
-    console.error(`Brevo send failed for print job ${data.id}: ${err.message}`);
-    return new Response(`Email failed: ${err.message}`, { status: 500 });
+    await this.storage.put(key, new Date().toISOString());
   }
 
-  await env.FULFILLMENT.put(key, JSON.stringify({ notified: recipient, at: new Date().toISOString() }));
-  console.log(`Print job ${data.id} shipped -> notified ${recipient}`);
-  return Response.json({ ok: true, notified: recipient });
+  async status(job) {
+    let order = await this.storage.get('order');
+    // Authenticate the association against Lulu, even for a validly signed
+    // webhook, so stale/wrong account data cannot choose arbitrary recipients.
+    const verified = await getPrintJob(this.env, job.id);
+    if (verified.external_id !== job.external_id) return new Response('Unrelated job');
+    job = verified;
+    if (order?.printJobId && String(order.printJobId) !== String(job.id)) {
+      await this.alert('duplicate-jobs', 'Another Lulu job references this payment. Review for duplicate printing.');
+      return new Response('Duplicate job requires review');
+    }
+    order = { ...order, sessionId: job.external_id, printJobId: job.id, phase: 'submitted', createdAt: order?.createdAt || job.date_created || new Date().toISOString(), status: job.status?.name };
+    await this.storage.put('order', order);
+    await this.observe(job);
+    return Response.json({ ok: true });
+  }
+
+  async observe(job) {
+    const state = job.status?.name;
+    if (['REJECTED', 'CANCELED'].includes(state)) {
+      await this.alert(state, `Lulu reports ${state}. Check the order and contact the buyer or arrange a refund/reprint as appropriate.`);
+      await this.storage.deleteAlarm();
+      return;
+    }
+    if (state === 'SHIPPED') {
+      const key = `shipped:${job.id}`;
+      // Honor old notification records when upgrading the service.
+      if (!(await this.storage.get(key)) && !(await this.env.FULFILLMENT.get(key))) {
+        const recipient = job.shipping_address?.email;
+        if (!recipient) {
+          await this.alert('missing-buyer-email', 'The book shipped but no buyer email was provided for the shipping notification.');
+        } else {
+          await sendShippingEmail(this.env, { recipient, name: job.shipping_address.name, tracking: extractTracking(job) });
+          await this.storage.put(key, true);
+        }
+      }
+      await this.storage.deleteAlarm();
+      return;
+    }
+    const age = Date.now() - Date.parse(job.date_created || (await this.storage.get('order'))?.createdAt);
+    if (state === 'UNPAID' && age > 6 * 60 * 60 * 1000) {
+      await this.alert('unpaid', 'The print job is still unpaid after six hours. Check Lulu automatic payments and the saved payment method.');
+    }
+    if (age > 14 * 86400000) await this.alert('delayed', 'The print job has not shipped after 14 days. Check its status and contact Lulu as needed.');
+    if (age > 30 * 86400000) {
+      await this.alert('monitor-ended', 'This job is over 30 days old and still not shipped. Manual follow-up is required; routine status polling has stopped.');
+      await this.storage.deleteAlarm();
+    } else {
+      await this.storage.setAlarm(Date.now() + MONITOR_INTERVAL);
+    }
+  }
+
+  async alarm() {
+    if (this.busy) { await this.storage.setAlarm(Date.now() + 60000); return; }
+    this.busy = true;
+    try {
+      // Persist the next attempt first so an API/email outage cannot end monitoring.
+      await this.storage.setAlarm(Date.now() + MONITOR_INTERVAL);
+      let order = await this.storage.get('order');
+      if (!order) { await this.storage.deleteAlarm(); return; }
+      if (!order.printJobId) {
+        const matches = await findPrintJobs(this.env, order.sessionId);
+        if (!matches.length) {
+          await this.alert('uncertain-submission', 'No print job could be confirmed after an interrupted submission. Check Lulu and Stripe manually before reprinting.');
+          await this.storage.deleteAlarm();
+          return;
+        }
+        order = { ...order, phase: 'submitted', printJobId: matches[0].id };
+        await this.storage.put('order', order);
+        if (matches.length > 1) await this.alert('duplicate-jobs', 'Multiple Lulu jobs reference this payment. Review for duplicate printing.');
+      }
+      await this.observe(await getPrintJob(this.env, order.printJobId));
+    } finally {
+      this.busy = false;
+    }
+  }
+}
+
+async function allowedPaymentLink(env, session) {
+  if (!env.ALLOWED_PAYMENT_LINK_URL) throw new Error('Allowed Payment Link is not configured');
+  if (!/^plink_[a-zA-Z0-9]+$/.test(session.payment_link || '')) return false;
+  const res = await fetch(`${STRIPE_API}/payment_links/${session.payment_link}`, {
+    headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` }, signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) throw new Error(`Stripe Payment Link lookup failed (${res.status})`);
+  const link = await res.json();
+  return link.url === env.ALLOWED_PAYMENT_LINK_URL;
+}
+
+async function findPrintJobs(env, sessionId) {
+  const token = await getLuluToken(env);
+  const res = await fetch(`${env.LULU_API_BASE}/print-jobs/?search=${encodeURIComponent(sessionId)}&page_size=100`, {
+    headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) throw new Error(`Lulu reconciliation failed (${res.status})`);
+  const data = await res.json();
+  if (!Array.isArray(data.results) || data.next) throw new Error('Lulu reconciliation requires manual review');
+  return data.results.filter(job => job.external_id === sessionId);
+}
+
+async function getPrintJob(env, id) {
+  if (!/^[0-9]+$/.test(String(id))) throw new Error('Invalid Lulu job ID');
+  const token = await getLuluToken(env);
+  const res = await fetch(`${env.LULU_API_BASE}/print-jobs/${id}/`, {
+    headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) throw new Error(`Lulu status lookup failed (${res.status})`);
+  return res.json();
 }
 
 /**
@@ -148,7 +300,7 @@ function extractTracking(job) {
 
 async function sendShippingEmail(env, { recipient, name, tracking }) {
   const firstName = String(name || '').trim().split(/\s+/)[0] || 'there';
-  const link = tracking.urls[0] || null;
+  const link = tracking.urls.find(url => { try { return ['https:', 'http:'].includes(new URL(url).protocol); } catch { return false; } }) || null;
   const carrier = tracking.carrier || 'the carrier';
 
   const trackingHtml = link
@@ -191,6 +343,10 @@ Slaton`,
     tags: ['shipping-notification'],
   };
 
+  await sendEmail(env, body);
+}
+
+async function sendEmail(env, body) {
   let lastError = 'unknown error';
   for (let attempt = 0; attempt < 3; attempt++) {
     if (attempt) await new Promise((r) => setTimeout(r, 400 * attempt));
@@ -198,11 +354,11 @@ Slaton`,
     const res = await fetch(BREVO_API, {
       method: 'POST',
       headers: { 'api-key': env.BREVO_API_KEY, 'Content-Type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(body), signal: AbortSignal.timeout(15000),
     });
 
     if (res.ok) return;
-    lastError = `${res.status}: ${await res.text()}`;
+    lastError = `Email provider returned ${res.status}`;
 
     // A rejected key or malformed payload will not fix itself on retry.
     if (res.status >= 400 && res.status < 500 && res.status !== 429) break;
@@ -214,7 +370,7 @@ Slaton`,
 const escapeHtml = (value) =>
   String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-async function fulfill(env, session) {
+async function preparePrintJob(env, session) {
   const quantity = await getQuantity(env, session.id);
   const shippingAddress = buildShippingAddress(session, env);
   const token = await getLuluToken(env);
@@ -235,6 +391,10 @@ async function fulfill(env, session) {
     production_delay: Number(env.PRODUCTION_DELAY || 120),
   };
 
+  return { body, token };
+}
+
+async function createPrintJob(env, { body, token }) {
   const res = await fetch(`${env.LULU_API_BASE}/print-jobs/`, {
     method: 'POST',
     headers: {
@@ -242,11 +402,11 @@ async function fulfill(env, session) {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache',
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(body), signal: AbortSignal.timeout(20000),
   });
 
   if (!res.ok) {
-    throw new Error(`Lulu print-job create returned ${res.status}: ${await res.text()}`);
+    throw new Error(`Lulu print-job create returned ${res.status}`);
   }
   return res.json();
 }
@@ -285,13 +445,15 @@ function printableFor(env) {
 async function getQuantity(env, sessionId) {
   const res = await fetch(`${STRIPE_API}/checkout/sessions/${sessionId}/line_items?limit=100`, {
     headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` },
+    signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) {
-    throw new Error(`Stripe line_items returned ${res.status}: ${await res.text()}`);
+    throw new Error(`Stripe line_items returned ${res.status}`);
   }
-  const { data } = await res.json();
-  const total = data.reduce((sum, item) => sum + (item.quantity || 0), 0);
-  if (total < 1) {
+  const { data, has_more } = await res.json();
+  if (has_more || !Array.isArray(data) || data.length !== 1) throw new Error('Expected one book product');
+  const total = data[0].quantity;
+  if (!Number.isSafeInteger(total) || total < 1) {
     throw new Error('Session had no line items with a quantity');
   }
   return total;
@@ -300,13 +462,16 @@ async function getQuantity(env, sessionId) {
 function buildShippingAddress(session, env) {
   // Newer Stripe API versions moved this under collected_information.
   const shipping = session.collected_information?.shipping_details || session.shipping_details;
-  const address = shipping?.address || session.customer_details?.address;
+  const address = shipping?.address;
 
   if (!address?.line1 || !address?.country) {
     throw new Error(
       `Session ${session.id} has no shipping address — enable shipping address collection on the Payment Link`
     );
   }
+
+  if (address.country !== 'US') throw new Error('Only US shipping is supported');
+  if (!address.city || !address.state || !address.postal_code) throw new Error('Incomplete shipping address');
 
   const name = shipping?.name || session.customer_details?.name;
   if (!name) {
@@ -333,7 +498,7 @@ function buildShippingAddress(session, env) {
 let cachedToken = null;
 
 async function getLuluToken(env) {
-  if (cachedToken && cachedToken.expiresAt > Date.now() + 30_000) {
+  if (cachedToken && cachedToken.account === `${env.LULU_API_BASE}:${env.LULU_CLIENT_KEY}` && cachedToken.expiresAt > Date.now() + 30_000) {
     return cachedToken.value;
   }
 
@@ -344,15 +509,16 @@ async function getLuluToken(env) {
       Authorization: `Basic ${credentials}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: 'grant_type=client_credentials',
+    body: 'grant_type=client_credentials', signal: AbortSignal.timeout(15000),
   });
 
   if (!res.ok) {
-    throw new Error(`Lulu auth returned ${res.status}: ${await res.text()}`);
+    throw new Error(`Lulu auth returned ${res.status}`);
   }
 
   const data = await res.json();
   cachedToken = {
+    account: `${env.LULU_API_BASE}:${env.LULU_CLIENT_KEY}`,
     value: data.access_token,
     expiresAt: Date.now() + (data.expires_in || 3600) * 1000,
   };
@@ -360,23 +526,6 @@ async function getLuluToken(env) {
 }
 
 const idempotencyKey = (sessionId) => `session:${sessionId}`;
-
-/**
- * Returns true if this invocation is the one that gets to fulfill the session.
- */
-async function claimSession(env, sessionId) {
-  const key = idempotencyKey(sessionId);
-  const existing = await env.FULFILLMENT.get(key);
-  if (existing) return false;
-
-  await env.FULFILLMENT.put(
-    key,
-    JSON.stringify({ state: 'processing', at: new Date().toISOString() }),
-    // If we crash mid-flight the claim expires and Stripe's retry can recover.
-    { expirationTtl: 3600 }
-  );
-  return true;
-}
 
 async function verifyStripeSignature(payload, header, secret) {
   if (!header) throw new Error('missing Stripe-Signature header');
@@ -424,6 +573,7 @@ async function verifyLuluSignature(payload, header, secret) {
 }
 
 async function hmacSha256(secret, message) {
+  if (typeof secret !== 'string' || !secret) throw new Error('Webhook secret is not configured');
   const key = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(secret),

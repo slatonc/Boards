@@ -1,3 +1,8 @@
+// Navigation targets replace inline handlers so the site can enforce a script policy.
+document.querySelectorAll('[data-scroll-to]').forEach(button => {
+    button.addEventListener('click', () => { window.location.hash = button.dataset.scrollTo; });
+});
+
 // Smooth scrolling for menu links
 document.querySelectorAll('.menu a').forEach(anchor => {
     anchor.addEventListener('click', function(e) {

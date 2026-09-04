@@ -1,306 +1,218 @@
-import worker from './src/index.js';
-import assert from 'node:assert';
-
-const SECRET = 'whsec_test_secret';
-
-function makeKV() {
-  const store = new Map();
-  return {
-    store,
-    get: async (k) => store.get(k) ?? null,
-    put: async (k, v) => void store.set(k, v),
-    delete: async (k) => void store.delete(k),
-  };
-}
-
-const env = () => ({
-  STRIPE_WEBHOOK_SECRET: SECRET,
-  STRIPE_SECRET_KEY: 'sk_test_x',
-  LULU_CLIENT_KEY: 'ck',
-  LULU_CLIENT_SECRET: 'cs',
-  LULU_API_BASE: 'https://api.sandbox.lulu.com',
-  LULU_CONTACT_EMAIL: 'slaton@fortheboards.com',
-  BOOK_TITLE: 'For The Boards',
-  POD_PACKAGE_ID: '0600X0900FCSTDPB060UW444MXX',
-  INTERIOR_PDF_URL: 'https://cdn.example.com/interior.pdf',
-  COVER_PDF_URL: 'https://cdn.example.com/cover.pdf',
-  SHIPPING_LEVEL: 'MAIL',
-  PRODUCTION_DELAY: '120',
-  FALLBACK_PHONE: '555-000-0000',
-  BREVO_API_KEY: 'brevo-test-key',
-  EMAIL_FROM: 'slaton@fortheboards.com',
-  EMAIL_FROM_NAME: 'For The Boards',
-  EMAIL_BCC: 'slaton@fortheboards.com',
-  FULFILLMENT: makeKV(),
-});
+import worker, { OrderFulfillment } from './src/index.js';
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
 
 const session = {
-  id: 'cs_test_abc123',
-  payment_status: 'paid',
-  customer_details: { email: 'buyer@example.com', name: 'Jane Resident', phone: '+12015550123' },
-  collected_information: {
-    shipping_details: {
-      name: 'Jane Resident',
-      address: {
-        line1: '123 Main St', line2: 'Apt 4', city: 'Boston',
-        state: 'MA', postal_code: '02115', country: 'US',
-      },
-    },
-  },
+  id: 'cs_test_order', payment_status: 'paid', payment_link: 'plink_book',
+  customer_details: { email: 'buyer@example.com', name: 'Test Buyer', phone: '+12015550123' },
+  collected_information: { shipping_details: { name: 'Test Buyer', address: {
+    line1: '123 Test St', line2: 'Apt 4', city: 'Boston', state: 'MA', postal_code: '02115', country: 'US',
+  } } },
 };
-
-const payload = JSON.stringify({ type: 'checkout.session.completed', data: { object: session } });
-
-async function sign(body, secret, ts = Math.floor(Date.now() / 1000)) {
-  const key = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${ts}.${body}`));
-  const hex = [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, '0')).join('');
-  return `t=${ts},v1=${hex}`;
+function harness() {
+  const records = new Map(), legacy = new Map(), objects = new Map();
+  const calls = { creates: [], emails: [], jobs: [] };
+  const options = { quantity: 2, link: 'https://buy.stripe.com/book', failEmail: false, failCreate: false, timeoutAfterCreate: false, holdCreate: null, failSave: false, searchFails: false };
+  const storage = {
+    get: async k => structuredClone(records.get(k)),
+    put: async (k, v) => {
+      if (options.failSave && k === 'order' && v.printJobId) { options.failSave = false; throw new Error('storage unavailable'); }
+      records.set(k, structuredClone(v));
+    },
+    setAlarm: async t => records.set('alarm', t),
+    deleteAlarm: async () => records.delete('alarm'),
+  };
+  const env = {
+    STRIPE_WEBHOOK_SECRET: 'stripe-secret', STRIPE_SECRET_KEY: 'test', LULU_CLIENT_KEY: 'test', LULU_CLIENT_SECRET: 'lulu-secret',
+    LULU_API_BASE: 'https://mock.lulu', BOOK_TITLE: 'For The Boards', LULU_CONTACT_EMAIL: 'seller@example.com',
+    LULU_PRINTABLE_ID: 'printable', ALLOWED_PAYMENT_LINK_URL: 'https://buy.stripe.com/book',
+    SHIPPING_LEVEL: 'MAIL', PRODUCTION_DELAY: '120', FALLBACK_PHONE: '555-0100', BREVO_API_KEY: 'test',
+    EMAIL_FROM: 'seller@example.com', EMAIL_FROM_NAME: 'For The Boards', EMAIL_BCC: 'seller@example.com', ALERT_EMAIL: 'seller@example.com',
+    FULFILLMENT: { get: async k => legacy.get(k) ?? null },
+  };
+  env.ORDERS = {
+    idFromName: id => id,
+    get: id => { if (!objects.has(id)) objects.set(id, new OrderFulfillment({ storage }, env)); return objects.get(id); },
+  };
+  globalThis.fetch = async (url, init = {}) => {
+    url = String(url);
+    if (url.includes('/payment_links/')) return Response.json({ url: options.link });
+    if (url.includes('/line_items?')) return Response.json({ data: [{ quantity: options.quantity }], has_more: false });
+    if (url.includes('openid-connect/token')) return Response.json({ access_token: 'token', expires_in: 3600 });
+    if (url.includes('/print-jobs/?')) {
+      if (options.searchFails) return new Response('down', { status: 503 });
+      return Response.json({ results: calls.jobs, next: null });
+    }
+    if (/\/print-jobs\/\d+\/$/.test(url)) {
+      const id = Number(url.match(/(\d+)\/$/)[1]);
+      const job = calls.jobs.find(j => j.id === id);
+      return job ? Response.json(job) : new Response('missing', { status: 404 });
+    }
+    if (url.endsWith('/print-jobs/')) {
+      const body = JSON.parse(init.body); calls.creates.push(body);
+      if (options.holdCreate) await options.holdCreate;
+      if (options.failCreate) return new Response('down', { status: 503 });
+      const job = { ...body, id: calls.creates.length + 100, date_created: new Date().toISOString(), status: { name: 'PRODUCTION_DELAY' } };
+      calls.jobs.push(job);
+      if (options.timeoutAfterCreate) throw new Error('response lost');
+      return Response.json(job, { status: 201 });
+    }
+    if (url.includes('api.brevo.com')) {
+      if (options.failEmail) return new Response('down', { status: 503 });
+      calls.emails.push(JSON.parse(init.body)); return Response.json({ messageId: 'test-message' });
+    }
+    throw new Error('Unexpected fetch: ' + url);
+  };
+  return { env, records, legacy, objects, calls, options, storage };
+}
+function stripeRequest(value = session, type = 'checkout.session.completed', timestamp = Math.floor(Date.now() / 1000)) {
+  const body = JSON.stringify({ type, data: { object: value } });
+  const signature = createHmac('sha256', 'stripe-secret').update(`${timestamp}.${body}`).digest('hex');
+  return new Request('https://worker.test/', { method: 'POST', body, headers: { 'stripe-signature': `t=${timestamp},v1=${signature}` } });
+}
+function luluRequest(job, encoding = 'hex') {
+  const body = JSON.stringify({ topic: 'PRINT_JOB_STATUS_CHANGED', data: job });
+  return new Request('https://worker.test/lulu', { method: 'POST', body, headers: { 'lulu-hmac-sha256': createHmac('sha256', 'lulu-secret').update(body).digest(encoding) } });
+}
+async function checkout(h, value = session, type) { return worker.fetch(stripeRequest(value, type), h.env); }
+async function shipped(h) {
+  await checkout(h);
+  Object.assign(h.calls.jobs[0], { status: { name: 'SHIPPED', line_item_statuses: [{ messages: { tracking_id: 'TRACK1', tracking_urls: ['https://tracking.example/1'] } }] } });
+  return h.calls.jobs[0];
 }
 
-const req = async (body, sig) =>
-  new Request('https://w.dev/', { method: 'POST', body, headers: { 'stripe-signature': sig } });
-
-let luluBody = null;
-globalThis.fetch = async (url, init) => {
-  url = String(url);
-  if (url.includes('/line_items')) return Response.json({ data: [{ quantity: 2 }] });
-  if (url.includes('openid-connect/token')) return Response.json({ access_token: 'tok', expires_in: 3600 });
-  if (url.endsWith('/print-jobs/')) {
-    luluBody = JSON.parse(init.body);
-    return Response.json({ id: 55501 }, { status: 201 });
-  }
-  throw new Error(`unexpected fetch: ${url}`);
-};
-
-// 1. Happy path
-const e1 = env();
-let res = await worker.fetch(await req(payload, await sign(payload, SECRET)), e1);
-assert.strictEqual(res.status, 200, 'happy path should be 200');
-assert.strictEqual((await res.json()).printJobId, 55501);
-console.log('✓ happy path returns print job id');
-
-assert.deepStrictEqual(luluBody.shipping_address, {
-  name: 'Jane Resident', street1: '123 Main St', street2: 'Apt 4', city: 'Boston',
-  state_code: 'MA', postcode: '02115', country_code: 'US',
-  phone_number: '+12015550123', email: 'buyer@example.com',
+test('paid checkout submits one book product with exact quantity and shipping details', async () => {
+  const h = harness(), response = await checkout(h);
+  assert.equal(response.status, 200); assert.equal(h.calls.creates.length, 1);
+  const body = h.calls.creates[0]; assert.equal(body.line_items[0].quantity, 2); assert.equal(body.line_items[0].printable_id, 'printable');
+  assert.equal(body.shipping_address.email, 'buyer@example.com'); assert.equal(body.shipping_address.street2, 'Apt 4');
+  assert.equal(body.shipping_level, 'MAIL'); assert.equal(body.production_delay, 120); assert.equal(body.external_id, session.id);
+  assert.equal(h.records.get('order').phase, 'submitted'); assert.ok(h.records.get('alarm'));
 });
-assert.strictEqual(luluBody.line_items[0].quantity, 2, 'quantity must come from Stripe line items');
-assert.strictEqual(luluBody.line_items[0].printable_normalization.pod_package_id, env().POD_PACKAGE_ID);
-assert.strictEqual(luluBody.external_id, 'cs_test_abc123');
-assert.strictEqual(luluBody.shipping_level, 'MAIL');
-assert.strictEqual(luluBody.production_delay, 120);
-console.log('✓ Lulu request body matches spec (address, qty, sku, external_id)');
-
-// 2. Idempotency — replay the exact same event
-luluBody = null;
-res = await worker.fetch(await req(payload, await sign(payload, SECRET)), e1);
-assert.strictEqual(res.status, 200);
-assert.strictEqual(luluBody, null, 'replay must NOT hit Lulu again');
-console.log('✓ duplicate delivery does not create a second print job');
-
-// 3. Bad signature
-res = await worker.fetch(await req(payload, 't=1,v1=deadbeef'), env());
-assert.strictEqual(res.status, 400, 'forged signature must be rejected');
-console.log('✓ forged signature rejected with 400');
-
-// 4. Stale timestamp (replay attack)
-res = await worker.fetch(await req(payload, await sign(payload, SECRET, 1700000000)), env());
-assert.strictEqual(res.status, 400);
-console.log('✓ stale timestamp rejected');
-
-// 5. Unpaid session
-const unpaid = JSON.stringify({
-  type: 'checkout.session.completed',
-  data: { object: { ...session, payment_status: 'unpaid' } },
+test('sequential replay does not create another job', async () => {
+  const h = harness(); await checkout(h); assert.equal((await checkout(h)).status, 200); assert.equal(h.calls.creates.length, 1);
 });
-luluBody = null;
-res = await worker.fetch(await req(unpaid, await sign(unpaid, SECRET)), env());
-assert.strictEqual(res.status, 200);
-assert.strictEqual(luluBody, null, 'unpaid session must not print');
-console.log('✓ unpaid session ignored');
-
-// 6. Lulu failure releases the claim so Stripe can retry
-const e6 = env();
-globalThis.fetch = async (url, init) => {
-  url = String(url);
-  if (url.includes('/line_items')) return Response.json({ data: [{ quantity: 1 }] });
-  if (url.includes('openid-connect/token')) return Response.json({ access_token: 'tok', expires_in: 3600 });
-  return new Response('upstream boom', { status: 503 });
-};
-res = await worker.fetch(await req(payload, await sign(payload, SECRET)), e6);
-assert.strictEqual(res.status, 500, 'Lulu failure should 500 so Stripe retries');
-assert.strictEqual(e6.FULFILLMENT.store.size, 0, 'claim must be released for the retry');
-console.log('✓ Lulu outage returns 500 and releases the idempotency claim');
-
-// 7. Missing shipping address is a clear error, not a malformed Lulu call
-const noAddr = JSON.stringify({
-  type: 'checkout.session.completed',
-  data: { object: { id: 'cs_test_noaddr', payment_status: 'paid', customer_details: { email: 'a@b.c' } } },
+test('concurrent duplicate returns retry while only one creation proceeds', async () => {
+  const h = harness(); let release; h.options.holdCreate = new Promise(r => { release = r; });
+  const first = checkout(h);
+  while (!h.calls.creates.length) await new Promise(r => setImmediate(r));
+  assert.equal((await checkout(h)).status, 503); release(); assert.equal((await first).status, 200);
+  assert.equal(h.calls.creates.length, 1);
 });
-res = await worker.fetch(await req(noAddr, await sign(noAddr, SECRET)), env());
-assert.strictEqual(res.status, 500);
-assert.match(await res.text(), /no shipping address/);
-console.log('✓ missing shipping address surfaces a clear error');
-
-// 8. printable_id mode: reuse Lulu's stored files, send no PDF URLs at all
-luluBody = null;
-globalThis.fetch = async (url, init) => {
-  url = String(url);
-  if (url.includes('/line_items')) return Response.json({ data: [{ quantity: 1 }] });
-  if (url.includes('openid-connect/token')) return Response.json({ access_token: 'tok', expires_in: 3600 });
-  if (url.endsWith('/print-jobs/')) {
-    luluBody = JSON.parse(init.body);
-    return Response.json({ id: 55502 }, { status: 201 });
-  }
-  throw new Error(`unexpected fetch: ${url}`);
-};
-const e8 = { ...env(), LULU_PRINTABLE_ID: '11606ab3-9355-46d3-ae90-338db6f5d271' };
-delete e8.INTERIOR_PDF_URL;
-delete e8.COVER_PDF_URL;
-res = await worker.fetch(await req(payload, await sign(payload, SECRET)), e8);
-assert.strictEqual(res.status, 200);
-assert.strictEqual(luluBody.line_items[0].printable_id, '11606ab3-9355-46d3-ae90-338db6f5d271');
-assert.ok(!luluBody.line_items[0].printable_normalization, 'must omit normalization when reusing a printable');
-console.log('✓ printable_id mode reuses stored files, no PDF hosting needed');
-
-// 9. Neither printable_id nor PDF URLs is a clear config error
-const e9 = env();
-delete e9.INTERIOR_PDF_URL;
-res = await worker.fetch(await req(payload, await sign(payload, SECRET)), e9);
-assert.strictEqual(res.status, 500);
-assert.match(await res.text(), /Set LULU_PRINTABLE_ID/);
-console.log('✓ missing file config gives an actionable error');
-
-// ---------------------------------------------------------------------------
-// Lulu shipping notifications (POST /lulu)
-// ---------------------------------------------------------------------------
-
-const shipped = {
-  topic: 'PRINT_JOB_STATUS_CHANGED',
-  data: {
-    id: 998877,
-    external_id: 'cs_test_abc123',
-    status: {
-      name: 'SHIPPED',
-      line_item_statuses: [
-        {
-          name: 'SHIPPED',
-          line_item_id: 1,
-          messages: {
-            tracking_id: 'TRK123',
-            tracking_urls: ['https://track.example/TRK123'],
-            carrier_name: 'UPS',
-          },
-        },
-      ],
-    },
-    shipping_address: { name: 'Jane Resident', email: 'buyer@example.com' },
-  },
-};
-
-async function luluHmac(body, secret, encoding = 'hex') {
-  const key = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body)));
-  return encoding === 'hex'
-    ? [...mac].map((b) => b.toString(16).padStart(2, '0')).join('')
-    : Buffer.from(mac).toString('base64');
-}
-
-const luluReq = async (body, sig) =>
-  new Request('https://w.dev/lulu', { method: 'POST', body, headers: { 'lulu-hmac-sha256': sig } });
-
-let brevoBody = null;
-let brevoStatus = 201;
-const mockBrevo = async (url, init) => {
-  url = String(url);
-  if (url.includes('api.brevo.com')) {
-    brevoBody = JSON.parse(init.body);
-    return brevoStatus === 201
-      ? Response.json({ messageId: 'msg-1' }, { status: 201 })
-      : new Response('brevo down', { status: brevoStatus });
-  }
-  throw new Error(`unexpected fetch: ${url}`);
-};
-
-// 10. Shipped job emails the buyer with their tracking link
-globalThis.fetch = mockBrevo;
-const shippedRaw = JSON.stringify(shipped);
-const e10 = env();
-res = await worker.fetch(await luluReq(shippedRaw, await luluHmac(shippedRaw, 'cs')), e10);
-assert.strictEqual(res.status, 200, 'shipped notification should succeed');
-assert.strictEqual(brevoBody.to[0].email, 'buyer@example.com');
-assert.match(brevoBody.htmlContent, /https:\/\/track\.example\/TRK123/);
-assert.match(brevoBody.textContent, /https:\/\/track\.example\/TRK123/);
-assert.match(brevoBody.subject, /shipped/i);
-assert.strictEqual(brevoBody.sender.email, 'slaton@fortheboards.com');
-console.log('✓ shipped job emails the buyer their tracking link');
-
-// 10b. Seller is blind-copied, and the buyer cannot see it
-assert.deepStrictEqual(brevoBody.bcc, [{ email: 'slaton@fortheboards.com' }]);
-assert.ok(!brevoBody.cc, 'must be BCC, not CC — the buyer should not see it');
-assert.strictEqual(brevoBody.to.length, 1, 'buyer should be the only visible recipient');
-console.log('✓ seller is blind-copied on every shipping email');
-
-// 10c. BCC is optional — unset means no copy, not a broken payload
-brevoBody = null;
-const eNoBcc = env();
-delete eNoBcc.EMAIL_BCC;
-const noBccRaw = JSON.stringify({ ...shipped, data: { ...shipped.data, id: 998879 } });
-res = await worker.fetch(await luluReq(noBccRaw, await luluHmac(noBccRaw, 'cs')), eNoBcc);
-assert.strictEqual(res.status, 200);
-assert.ok(!('bcc' in brevoBody), 'no BCC key when EMAIL_BCC is unset');
-console.log('✓ blind copy can be turned off cleanly');
-
-// 11. Lulu redelivery does not email twice
-brevoBody = null;
-res = await worker.fetch(await luluReq(shippedRaw, await luluHmac(shippedRaw, 'cs')), e10);
-assert.strictEqual(res.status, 200);
-assert.strictEqual(brevoBody, null, 'redelivery must not send a second email');
-console.log('✓ duplicate shipping webhook does not email twice');
-
-// 12. Base64 digest accepted (Lulu does not document the encoding)
-brevoBody = null;
-res = await worker.fetch(await luluReq(shippedRaw, await luluHmac(shippedRaw, 'cs', 'base64')), env());
-assert.strictEqual(res.status, 200);
-assert.ok(brevoBody, 'base64-encoded HMAC should verify');
-console.log('✓ accepts both hex and base64 HMAC encodings');
-
-// 13. Forged Lulu signature rejected
-res = await worker.fetch(await luluReq(shippedRaw, 'not-a-real-hmac'), env());
-assert.strictEqual(res.status, 400);
-console.log('✓ forged Lulu signature rejected with 400');
-
-// 14. Non-shipped status ignored
-const created = JSON.stringify({
-  topic: 'PRINT_JOB_STATUS_CHANGED',
-  data: { ...shipped.data, status: { name: 'IN_PRODUCTION' } },
+test('storage failure after acceptance reconciles across object restart without reprinting', async () => {
+  const h = harness(); h.options.failSave = true; assert.equal((await checkout(h)).status, 503);
+  assert.equal(h.records.get('order').phase, 'creating'); h.objects.clear();
+  assert.equal((await checkout(h)).status, 200); assert.equal(h.calls.creates.length, 1); assert.equal(h.records.get('order').printJobId, 101);
 });
-brevoBody = null;
-res = await worker.fetch(await luluReq(created, await luluHmac(created, 'cs')), env());
-assert.strictEqual(res.status, 200);
-assert.strictEqual(brevoBody, null, 'only SHIPPED should notify');
-console.log('✓ non-shipped status changes ignored');
-
-// 15. No buyer email returns 200, not 500 — Lulu deactivates a webhook after
-//     5 consecutive failures, and this can never succeed on retry.
-const noEmail = JSON.stringify({
-  topic: 'PRINT_JOB_STATUS_CHANGED',
-  data: { ...shipped.data, id: 998878, shipping_address: { name: 'Jane Resident' } },
+test('lost Lulu response is reconciled without reprinting', async () => {
+  const h = harness(); h.options.timeoutAfterCreate = true; assert.equal((await checkout(h)).status, 503);
+  h.objects.clear(); assert.equal((await checkout(h)).status, 200); assert.equal(h.calls.creates.length, 1);
 });
-res = await worker.fetch(await luluReq(noEmail, await luluHmac(noEmail, 'cs')), env());
-assert.strictEqual(res.status, 200, 'unsendable notification must not burn Lulu retries');
-console.log('✓ missing buyer email does not risk webhook deactivation');
-
-// 16. Brevo outage returns 500 so Lulu retries, and does not mark as notified
-brevoStatus = 503;
-const e16 = env();
-res = await worker.fetch(await luluReq(shippedRaw, await luluHmac(shippedRaw, 'cs')), e16);
-assert.strictEqual(res.status, 500, 'Brevo outage should ask Lulu to retry');
-assert.strictEqual(e16.FULFILLMENT.store.size, 0, 'must not record a notification that never sent');
-brevoStatus = 201;
-console.log('✓ Brevo outage retries instead of silently dropping the email');
-
-console.log('\nAll 18 checks passed.');
+test('ambiguous submission with no visible job remains held and alerts once', async () => {
+  const h = harness(); h.options.failCreate = true; assert.equal((await checkout(h)).status, 503);
+  h.options.failCreate = false; h.objects.clear(); assert.equal((await checkout(h)).status, 503);
+  assert.equal(h.calls.creates.length, 1); assert.equal(h.calls.emails.length, 1);
+});
+test('legacy completed records are respected', async () => {
+  const h = harness(); h.legacy.set('session:' + session.id, JSON.stringify({ state: 'done', printJobId: 88, at: new Date().toISOString() }));
+  assert.equal((await checkout(h)).status, 200); assert.equal(h.calls.creates.length, 0); assert.equal(h.records.get('order').printJobId, 88);
+});
+test('legacy processing claims are never acknowledged as fulfilled or blindly reprinted', async () => {
+  const h = harness(); h.legacy.set('session:' + session.id, JSON.stringify({ state: 'processing', at: new Date().toISOString() }));
+  assert.equal((await checkout(h)).status, 503); assert.equal(h.calls.creates.length, 0);
+});
+test('historical Lulu match without a storage record is imported', async () => {
+  const h = harness(); h.calls.jobs.push({ id: 99, external_id: session.id, status: { name: 'CANCELED' } });
+  assert.equal((await checkout(h)).status, 200); assert.equal(h.calls.creates.length, 0); assert.equal(h.records.get('order').printJobId, 99);
+});
+test('reconciliation failure never falls through to creation', async () => {
+  const h = harness(); h.options.searchFails = true; assert.equal((await checkout(h)).status, 503); assert.equal(h.calls.creates.length, 0);
+});
+test('delayed payment success fulfills; unpaid and unrelated event types do not', async () => {
+  const h = harness(); await checkout(h, { ...session, payment_status: 'unpaid' }); assert.equal(h.calls.creates.length, 0);
+  await checkout(h, session, 'checkout.session.async_payment_failed'); assert.equal(h.calls.creates.length, 0);
+  assert.equal((await checkout(h, session, 'checkout.session.async_payment_succeeded')).status, 200); assert.equal(h.calls.creates.length, 1);
+});
+test('unrelated Payment Link cannot trigger a book', async () => {
+  const h = harness(); h.options.link = 'https://buy.stripe.com/other'; assert.equal((await checkout(h)).status, 200); assert.equal(h.calls.creates.length, 0);
+  await checkout(h, { ...session, payment_link: null }); assert.equal(h.calls.creates.length, 0);
+});
+test('missing allowed link configuration fails closed', async () => {
+  const h = harness(); delete h.env.ALLOWED_PAYMENT_LINK_URL; assert.equal((await checkout(h)).status, 503); assert.equal(h.calls.creates.length, 0);
+});
+test('missing shipping data and billing-only address do not create jobs', async () => {
+  const h = harness(); const bad = { ...session, collected_information: {}, customer_details: { ...session.customer_details, address: session.collected_information.shipping_details.address } };
+  assert.equal((await checkout(h, bad)).status, 503); assert.equal(h.calls.creates.length, 0);
+  assert.equal((await checkout(h)).status, 200); assert.equal(h.calls.creates.length, 1);
+});
+test('non-US destination and invalid quantities are rejected before printing', async () => {
+  const h = harness(); const nonUS = structuredClone(session); nonUS.collected_information.shipping_details.address.country = 'CA';
+  assert.equal((await checkout(h, nonUS)).status, 503); assert.equal(h.calls.creates.length, 0);
+  h.options.quantity = 1.5; assert.equal((await checkout(h)).status, 503); assert.equal(h.calls.creates.length, 0);
+});
+test('source PDF mode works and absent print configuration fails before creation', async () => {
+  const h = harness(); delete h.env.LULU_PRINTABLE_ID;
+  assert.equal((await checkout(h)).status, 503); assert.equal(h.calls.creates.length, 0);
+  Object.assign(h.env, { INTERIOR_PDF_URL: 'https://example.com/interior.pdf', COVER_PDF_URL: 'https://example.com/cover.pdf', POD_PACKAGE_ID: 'sku' });
+  assert.equal((await checkout(h)).status, 200); assert.equal(h.calls.creates[0].line_items[0].printable_normalization.interior.source_url, h.env.INTERIOR_PDF_URL);
+});
+test('invalid and stale signatures are rejected', async () => {
+  const h = harness(); const forged = stripeRequest(); forged.headers.set('stripe-signature', 't=1,v1=wrong');
+  assert.equal((await worker.fetch(forged, h.env)).status, 400);
+  assert.equal((await worker.fetch(stripeRequest(session, undefined, 1), h.env)).status, 400);
+  const badLulu = luluRequest({}); badLulu.headers.set('lulu-hmac-sha256', 'wrong');
+  assert.equal((await worker.fetch(badLulu, h.env)).status, 400); assert.equal(h.calls.creates.length, 0);
+});
+test('method, route and request-size restrictions', async () => {
+  const h = harness(); assert.equal((await worker.fetch(new Request('https://worker.test/'), h.env)).status, 405);
+  assert.equal((await worker.fetch(new Request('https://worker.test/other'), h.env)).status, 404);
+  assert.equal((await worker.fetch(new Request('https://worker.test/', { method: 'POST', body: 'x'.repeat(262145) }), h.env)).status, 413);
+});
+test('verified shipped job sends buyer tracking and seller BCC only once', async () => {
+  const h = harness(), job = await shipped(h);
+  assert.equal((await worker.fetch(luluRequest(job, 'base64'), h.env)).status, 200);
+  assert.equal(h.calls.emails.length, 1); assert.equal(h.calls.emails[0].to[0].email, 'buyer@example.com');
+  assert.deepEqual(h.calls.emails[0].bcc, [{ email: 'seller@example.com' }]); assert.match(h.calls.emails[0].textContent, /https:\/\/tracking.example\/1/);
+  await worker.fetch(luluRequest(job), h.env); assert.equal(h.calls.emails.length, 1); assert.equal(h.records.has('alarm'), false);
+});
+test('notification uses Lulu API data, not unverified webhook recipient', async () => {
+  const h = harness(), job = await shipped(h); const payload = { ...job, shipping_address: { email: 'wrong@example.com' } };
+  await worker.fetch(luluRequest(payload), h.env); assert.equal(h.calls.emails[0].to[0].email, 'buyer@example.com');
+});
+test('legacy shipped record suppresses repeat notification', async () => {
+  const h = harness(), job = await shipped(h); h.legacy.set(`shipped:${job.id}`, 'done');
+  await worker.fetch(luluRequest(job), h.env); assert.equal(h.calls.emails.length, 0);
+});
+test('missing buyer email alerts seller instead of silently losing notification', async () => {
+  const h = harness(), job = await shipped(h); delete job.shipping_address.email;
+  assert.equal((await worker.fetch(luluRequest(job), h.env)).status, 200); assert.equal(h.calls.emails[0].to[0].email, 'seller@example.com');
+});
+test('email failure remains retryable and unmarked', async () => {
+  const h = harness(), job = await shipped(h); h.options.failEmail = true;
+  assert.equal((await worker.fetch(luluRequest(job), h.env)).status, 503); assert.equal(h.records.has(`shipped:${job.id}`), false);
+  h.options.failEmail = false; assert.equal((await worker.fetch(luluRequest(job), h.env)).status, 200); assert.equal(h.calls.emails.length, 1);
+});
+test('unsafe tracking links are not included in email HTML', async () => {
+  const h = harness(), job = await shipped(h); job.status.line_item_statuses[0].messages.tracking_urls = ['javascript:alert(1)'];
+  await worker.fetch(luluRequest(job), h.env); assert.doesNotMatch(h.calls.emails[0].htmlContent, /javascript:/);
+});
+test('rejected and canceled jobs generate one seller alert per status', async () => {
+  const h = harness(); await checkout(h); const job = h.calls.jobs[0]; job.status = { name: 'REJECTED' };
+  await worker.fetch(luluRequest(job), h.env); await worker.fetch(luluRequest(job), h.env);
+  assert.equal(h.calls.emails.length, 1); assert.equal(h.calls.emails[0].to[0].email, 'seller@example.com'); assert.equal(h.records.has('alarm'), false);
+});
+test('alarm reconciles a lost response and monitors unpaid orders', async () => {
+  const h = harness(); h.options.timeoutAfterCreate = true; await checkout(h);
+  const job = h.calls.jobs[0]; job.date_created = new Date(Date.now() - 7 * 3600000).toISOString(); job.status = { name: 'UNPAID' };
+  await h.env.ORDERS.get(session.id).alarm(); assert.equal(h.records.get('order').printJobId, 101);
+  assert.ok(h.calls.emails.some(e => /still unpaid/.test(e.textContent))); assert.ok(h.records.get('alarm')); assert.equal(h.calls.creates.length, 1);
+});
+test('alarm can deliver shipping mail even without a Lulu webhook', async () => {
+  const h = harness(); await shipped(h); await h.env.ORDERS.get(session.id).alarm();
+  assert.equal(h.calls.emails[0].to[0].email, 'buyer@example.com'); assert.equal(h.records.has('alarm'), false);
+});
+test('alarm stops long-running polling after seller escalation', async () => {
+  const h = harness(); await checkout(h); h.calls.jobs[0].date_created = new Date(Date.now() - 31 * 86400000).toISOString();
+  await h.env.ORDERS.get(session.id).alarm(); assert.equal(h.records.has('alarm'), false); assert.ok(h.calls.emails.some(e => /30 days/.test(e.textContent)));
+});
